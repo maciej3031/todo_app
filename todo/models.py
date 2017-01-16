@@ -8,7 +8,7 @@ class User():
     def __init__(self, id):
         self.username = id
         db = get_db()
-        self.hashpassword = db.execute('SELECT password FROM users WHERE login = ?;', (self.username,)).fetchone()["password"]
+        self.password = db.execute('SELECT password FROM users WHERE username = ?;', (self.username,)).fetchone()["password"]
 
     def is_active(self):
         """logged in user always active"""
@@ -25,6 +25,7 @@ class User():
     def is_anonymous(self):
         """always False, no anonymous users"""
         return False
+
 
 def get_db():
     """Connecting with database"""

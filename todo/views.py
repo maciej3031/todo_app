@@ -37,7 +37,7 @@ def login():
         if username and password:
             try:
                 user = User(username)
-                if argon2.verify(password, user.hashpassword):   # sprawdzamy czy login i hasło zgodne z danymi w bazie przy pomocy Argon2
+                if argon2.verify(password, user.password):   # sprawdzamy czy login i hasło zgodne z danymi w bazie przy pomocy Argon2
                     login_user(user)
                     flash('Logged in successfully')
                     return redirect(url_for("insert"))
@@ -71,11 +71,11 @@ def register():
     """Sign up method"""
 
     username = request.form['login']
-    hashpassword = argon2.using(rounds=4).hash(request.form['pass'])       #hashowanie hasła przy pomocy Argon2
+    password = argon2.using(rounds=4).hash(request.form['pass'])       #hashowanie hasła przy pomocy Argon2
     db = get_db()
-    user_data = db.execute('SELECT login FROM users WHERE login = ?', (username, )).fetchone()
-    if username and hashpassword and not user_data:   # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
-        db.execute('INSERT INTO users VALUES (?,?)', (username, hashpassword))
+    user_data = db.execute('SELECT username FROM users WHERE username = ?', (username, )).fetchone()
+    if username and password and not user_data:   # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
+        db.execute('INSERT INTO users VALUES (?,?)', (username, password))
         db.commit()
         info = "Profile was created successfully"
         return render_template('login.html', info=info)
@@ -106,7 +106,7 @@ def insert():
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
 
-    tasks = db.execute('SELECT * FROM tasks WHERE login = ? ORDER BY data_pub DESC;', (user.username,)).fetchall()
+    tasks = db.execute('SELECT * FROM tasks WHERE username = ? ORDER BY data_pub DESC;', (user.username,)).fetchall()
     return render_template('tasks_list.html', tasks=tasks, error=error, nick=user.username)
 
 
@@ -161,8 +161,8 @@ def delete_account():
 
     user = current_user
     db = get_db()
-    db.execute("DELETE FROM users WHERE login = ?", (user.username,))
-    db.execute("DELETE FROM tasks WHERE login = ?", (user.username,))
+    db.execute("DELETE FROM users WHERE username = ?", (user.username,))
+    db.execute("DELETE FROM tasks WHERE username = ?", (user.username,))
     db.commit()
     logout_user()
     del user
