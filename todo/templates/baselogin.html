@@ -1,0 +1,36 @@
+<!-- todo/templates/baselogin.html -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+
+    <title>Registration Page</title>
+
+    <meta name="description"
+          content=""/>
+    <meta name="keywords"
+          content=""/>
+
+    <link rel="stylesheet" href="../static/style.css" type="text/css"/>
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+
+</head>
+
+<body>
+    <div id="box">
+    <div>
+        <a class="title" href="{{ url_for('login') }}">
+            <h1>{{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom"></h1>
+        </a>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    </div>
+    <div id="footer2">
+        2016 &copy; Maciej Pęśko<br>
+        <img src="../static/mail.ico" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
+    </div>
+</body>
+</html>

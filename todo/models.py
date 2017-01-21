@@ -2,6 +2,7 @@ import sqlite3
 from todo import app
 from flask import g
 
+
 class User():
     """User class"""
 
