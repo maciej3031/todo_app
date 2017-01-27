@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # todo/views.py
 
-
-from flask import g, render_template, flash, redirect, url_for, request
+from flask import g, render_template, flash, redirect, url_for, request, session
 from datetime import datetime
 from flask_login import login_required, current_user, login_user, logout_user
 from passlib.hash import argon2
-from todo import app, login_manager
-from .models import User, get_db
+from todo import app, login_manager, db
+from .models import User, Task
 # from .forms import TaskForm
 
 
@@ -15,36 +14,41 @@ from .models import User, get_db
 def user_loader(user_id):
     """Return user object given id"""
 
-    return User(user_id)
+    return User.query.get(user_id)
 
 
-@app.teardown_request
-def close_db(error):
-    """Closes connection with database"""
+# @app.teardown_request
+# def close_db(error):
+#     """Closes connection with database"""
+#
+#     if hasattr(g, 'db'):
+#         g.db.close()
 
-    if hasattr(g, 'db'):
-        g.db.close()
+@app.before_request
+def before_request():
+    g.user = current_user
 
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
-    """log in method"""
+    """login method"""
 
     error = None
     if request.method == 'POST':
         username = request.form['login']
-        password = request.form['pass']
+        password = request.form['password']
+        remember_me = request.form.get('rememberme') # musi być .get aby, gdyż metoda POST przesyla dane tylko wtedy kiedy checkbox jest zaznaczony
         if username and password:
-            try:
-                user = User(username)
+            user = User.query.filter_by(username=username).first()
+            if user:
                 if argon2.verify(password, user.password):   # sprawdzamy czy login i hasło zgodne z danymi w bazie przy pomocy Argon2
-                    login_user(user)
+                    login_user(user, remember=remember_me)
                     flash('Logged in successfully')
                     return redirect(url_for("insert"))
                 else:
                     error = "Incorrect login or password"  # komunikat o błędzie
-            except TypeError:
-                error = "Incorrect login or password"   # komunikat o błędzie
+            else:
+                error = "Incorrect login or password"  # komunikat o błędzie
         else:
             error = "Incorrect login or password"  # komunikat o błędzie
 
@@ -70,17 +74,26 @@ def register_dir():
 def register():
     """Sign up method"""
 
-    username = request.form['login']
-    password = argon2.using(rounds=4).hash(request.form['pass'])       #hashowanie hasła przy pomocy Argon2
-    db = get_db()
-    user_data = db.execute('SELECT username FROM users WHERE username = ?', (username, )).fetchone()
-    if username and password and not user_data:   # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
-        db.execute('INSERT INTO users VALUES (?,?)', (username, password))
-        db.commit()
-        info = "Profile was created successfully"
-        return render_template('login.html', info=info)
-    else:
-        error = "Incorrect data or login already exists"  # komunikat o błędzie
+    error = None
+    if request.method == 'POST':
+        username = request.form['login']
+        password = request.form['password']
+        if password and username:       # sprawdzenie czy podano zarówno login jak i hasło
+            password = argon2.using(rounds=4).hash(password)       #hashowanie hasła przy pomocy Argon2
+            # db = get_db()
+            # user_data = db.execute('SELECT username FROM users WHERE username = ?', (username, )).fetchone()
+            user_data = User.query.filter_by(username=username).first()
+            if not user_data:   # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
+                # db.execute('INSERT INTO users VALUES (?,?)', (username, password))
+                user = User(username=username, password=password)
+                db.session.add(user)
+                db.session.commit()
+                info = "Profile was created successfully"
+                return render_template('login.html', info=info)
+            else:
+                error = "Incorrect data or login already exists"  # komunikat o błędzie
+        else:
+            error = "Incorrect data or login already exists"  # komunikat o błędzie
 
     return render_template('register.html', error=error)
 
@@ -91,23 +104,25 @@ def insert():
     """Adding and displaying tasks"""
 
     error = None
-    db = get_db()
-    user = current_user     # current_user zwraca obiekt aktualnego użytkownika
+    # db = get_db()
     # form1 = TaskForm(request.form)
     if request.method == 'POST':
         if len(request.form['task']) > 0:
-            task = request.form['task']
+            task_text = request.form['task']
             executed = 0
-            data_pub = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            db.execute('INSERT INTO tasks VALUES (?,?,?,?,?);', (None, task, executed, data_pub, user.username))
-            db.commit()
+            data_pub = datetime.now().replace(microsecond=0)    # usuwamy mikrosekundy
+            # db.execute('INSERT INTO tasks VALUES (?,?,?,?,?);', (None, task, executed, data_pub, g.user.username))
+            task = Task(task=task_text, executed=executed, data_pub=data_pub, username=g.user.username)
+            db.session.add(task)
+            db.session.commit()
             flash('New task added.')
             return redirect(url_for('insert'))
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
 
-    tasks = db.execute('SELECT * FROM tasks WHERE username = ? ORDER BY data_pub DESC;', (user.username,)).fetchall()
-    return render_template('tasks_list.html', tasks=tasks, error=error, nick=user.username)
+    # tasks = db.execute('SELECT * FROM tasks WHERE username = ? ORDER BY data_pub DESC;', (g.user.username,)).fetchall()
+    tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).all()
+    return render_template('tasks_list.html', tasks=tasks, error=error)
 
 
 @app.route('/executed', methods=['POST'])
@@ -116,9 +131,11 @@ def executed():
     """Changing status of a task to executed """
 
     task_id = request.form['execute']
-    db = get_db()
-    db.execute("UPDATE tasks SET executed = ? WHERE id = ?", (1, task_id))
-    db.commit()
+    # db = get_db()
+    # db.execute("UPDATE tasks SET executed = ? WHERE id = ?", (1, task_id))
+    task = Task.query.filter_by(id=task_id).first()
+    task.executed = 1
+    db.session.commit()
     return redirect(url_for('insert'))
 
 
@@ -148,9 +165,11 @@ def executed():
 def erase():
     """Deletes a given task"""
     for i in request.form.getlist('erase'):
-        db = get_db()
-        db.execute("DELETE FROM tasks WHERE id = ?", (i, ))
-        db.commit()
+        # db = get_db()
+        # db.execute("DELETE FROM tasks WHERE id = ?", (i, ))
+        task = Task.query.filter_by(id=i).first()
+        db.session.delete(task)
+        db.session.commit()
     return redirect(url_for('insert'))
 
 
@@ -159,12 +178,15 @@ def erase():
 def delete_account():
     """Deletes account permanently"""
 
-    user = current_user
-    db = get_db()
-    db.execute("DELETE FROM users WHERE username = ?", (user.username,))
-    db.execute("DELETE FROM tasks WHERE username = ?", (user.username,))
-    db.commit()
+    # db = get_db()
+    # db.execute("DELETE FROM users WHERE username = ?", (g.user.username,))
+    # db.execute("DELETE FROM tasks WHERE username = ?", (g.user.username,))
+    tasks = Task.query.filter_by(username=g.user.username).all()
+    for i in tasks:
+        db.session.delete(i)
+    user = User.query.filter_by(username=g.user.username).first()
+    db.session.delete(user)
+    db.session.commit()
     logout_user()
-    del user
     flash('Account was deleted permanently')
     return render_template('login.html')
