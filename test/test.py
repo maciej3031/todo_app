@@ -17,7 +17,7 @@ class FlaskTest(unittest.TestCase):
         self.app = app.test_client()
         db.create_all()
         password = argon2.using(rounds=4).hash("password")
-        user1 = User(username='user', password=password)
+        user1 = User(username='user', password=password, email="test@test.com")
         task1 = Task(id=0, task="test task1 test", executed=False, data_pub=datetime.now().replace(microsecond=0),
                      username="user")
         task2 = Task(id=1, task="test task2 test", executed=False, data_pub=datetime.now().replace(microsecond=0),
@@ -33,8 +33,9 @@ class FlaskTest(unittest.TestCase):
 
     # Helper methods
 
-    def register(self, username, password):
-        return self.app.post('/register', data=dict(login=username, password=password), follow_redirects=True)
+    def register(self, username, password, confpass, email):
+        return self.app.post('/register', data=dict(login=username, password=password, password2=confpass, email=email),
+                             follow_redirects=True)
 
     def login(self, username, password):
         return self.app.post('/', data=dict(login=username, password=password), follow_redirects=True)
@@ -61,25 +62,51 @@ class FlaskTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_valid_user_registration(self):
-        response = self.register('user1', 'password1')
+        response = self.register('user1', 'password1', 'password1', 'test@gmail.com')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Profile was created successfully', response.data)
         self.assertTrue(User.query.filter_by(username="user1").first())
 
-    def test_invalid_user_registration_duplicate_email(self):
-        response = self.register('user', 'password')
+    def test_invalid_user_registration_invalid_email(self):
+        response = self.register('user1', 'password1', 'password1', 'invalidemail.com')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Incorrect data or login already exists', response.data)
+        self.assertIn(b'Incorrect email address', response.data)
+        self.assertFalse(User.query.filter_by(email="invalidemail.com").first())
 
-    def test_invalid_user_registration_empty_login_and_password(self):
-        response = self.register("", "")
+    def test_invalid_user_registration_duplicate_email(self):
+        response = self.register('user123', 'password', 'password', 'test@test.com')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'Incorrect data or login already exists', response.data)
+        self.assertIn(b'Login or email already exists', response.data)
+
+    def test_invalid_user_registration_duplicate_user(self):
+        response = self.register('user', 'password', 'password', 'test@gmail.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Login or email already exists', response.data)
+
+    def test_invalid_user_registration_passwords_do_not_match(self):
+        response = self.register('user2', 'password', 'password2', 'test@gmail.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Passwords do not match', response.data)
+
+    def test_invalid_user_registration_empty_login_and_password_and_email(self):
+        response = self.register("", "", "", "")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Incorrect data', response.data)
 
     def test_invalid_user_login_empty_login_and_password(self):
         response = self.login("", "")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Incorrect login or password', response.data)
+
+    def test_invalid_user_login_no_such_user(self):
+        response = self.login("user1234", "password")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'No such user', response.data)
+
+    def test_invalid_user_login_incorrect_password(self):
+        response = self.login("user", "pass")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Incorrect password', response.data)
 
     def test_valid_user_login(self):
         response = self.login('user', 'password')

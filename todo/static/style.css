@@ -7,26 +7,46 @@ body
     font-family: 'Roboto', sans-serif;
 }
 
+header
+{
+    background-color: #1B5E20;
+    margin-top: -20px;
+    padding: 20px;
+    color: white;
+}
+
+main
+{
+    background-color: floralwhite;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 0px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 20px;
+    min-height: 400px;
+}
+
 #box
 {
     background-color: floralwhite;
     width: 560px;
     margin-left: auto;
     margin-right: auto;
-    height: calc(100vh - 400px);
-    margin-top: 150px;
+    height: calc(100vh - 300px);
+    margin-top: 120px;
     padding:  20px;
     min-height: 500px;
+
 }
 
 #container
 {
     background-color: floralwhite;
-    width: 680px;
+    width: 720px;
     margin-left: auto;
     margin-right: auto;
-    height: calc(100vh - 100px);
-    padding:  20px;
+    height: calc(100vh - 60px);
     min-height: 500px;
     overflow: scroll;
 
@@ -38,10 +58,17 @@ body
     text-decoration: none;
 }
 
+.title2
+{
+    color: white;
+    text-decoration: none;
+}
+
 #header
 {
     width: 680px;
-    margin-bottom: -10px;
+    margin-top: -20px;
+    margin-bottom: -30px;
     margin-left: auto;
     margin-right: auto;
     display: flex;
@@ -49,21 +76,29 @@ body
     align-items: center;
 }
 
-#header1
+.header1
 {
     float: left;
     width:80px;
     margin-top: -20px;
-    margin-left: auto;
-    margin-right: 5px;
+    margin-right: 15px;
 }
 
 #header2
 {
     float: left;
+    width:90px;
+    margin-top: -20px;
+    margin-left: auto;
+    margin-right: 5px;
+}
+
+#header3
+{
+    float: left;
     width: auto;
-    margin-left:0;
-    margin-right: auto;
+    margin-right: 20px;
+    text-align: right;
 }
 
 #content
@@ -71,7 +106,7 @@ body
     min-height: 250px;
 }
 
-#footer
+footer
 {
     height: 30px;
     width: 680px;
@@ -101,7 +136,6 @@ body
     width: auto;
     text-align: right;
     margin-right: 0;
-    margin-top: -30px;
 }
 
 h1, h3, p
@@ -117,8 +151,8 @@ h1, h3, p
 
 .del-form
 {
-    text-align: left;
-    margin-top: 10px;
+    text-align: center;
+    margin-left: 50px;
 }
 
 .form2
@@ -183,6 +217,7 @@ button
 button:hover
 {
     cursor: pointer;
+    background: #FBC02D;
 }
 
 .b1
@@ -190,10 +225,17 @@ button:hover
     cursor: pointer;
     font-size: 11px;
     background: floralwhite;
-    color: #30bb30;
+    color: #4CAF50;
     border: none;
 
 }
+
+.b1:hover
+{
+    background: floralwhite;
+    color: #81C784;
+}
+
 
 .b2
 {
@@ -201,14 +243,25 @@ button:hover
     font-size: 11px;
     background: floralwhite;
     border: none;
-    color: red;
+    color: #BF360C;
+}
+
+.b2:hover
+{
+    background: floralwhite;
+    color: #FF5722;
 }
 
 .b3
 {
-    font-size: 11px;
-    background: floralwhite;
+    width: 115px;
 }
+
+.b4
+{
+    width: 82px;
+}
+
 
 #eraser
 {

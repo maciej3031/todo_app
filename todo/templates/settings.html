@@ -1,0 +1,45 @@
+{% extends "index.html" %}
+{% block content %}
+    <!-- informacje o sukcesie lub błędzie -->
+<p>
+    {% for message in get_flashed_messages() %}
+        <strong class="error">Error!: {{ message }}</strong>
+    {% endfor %}
+
+    {% if error %}
+        <strong class="error">Error: {{ error }}</strong>
+    {% endif %}
+
+    {% if info %}
+        <strong class="success">{{ info }}</strong>
+    {% endif %}
+</p>
+
+<div id="content">
+    <h3 style="margin-left: 40px;">Change your profile info:</h3>
+    <!-- formularz zmian -->
+    <form class="add-form" method="POST" action="{{ url_for('change_profile_data') }}">
+            <p style="margin-left: 28px">
+                <label>E-mail: <input type="text" name="email" placeholder="i.e. nick123@gmail.com"></label>
+            </p>
+            <p style="margin-left: 31px">
+                <label>Login: <input type="text" name="login" placeholder="i.e. nick123"></label>
+            </p>
+            <p><label>Password: <input type="password" name="password"></label></p>
+            <p style="margin-left: -58px">
+                <label>Confirm password: <input type="password" name="password2"></label>
+            </p>
+            <p style="margin-left: 50px"><label><button type="submit"><b>Save changes</b></button></label></p>
+    </form>
+    <br><hr>
+    <h3 style="margin-left: 40px;">Delete your account:</h3>
+    <form class="del-form" method="POST" action="{{ url_for('delete_account') }}">
+        <label>
+            <button type="submit" class="b3" onclick="return confirm('Are you sure you want to delete your account?');">
+                <b>Delete account</b>
+            </button>
+        </label>
+    </form>
+
+</div>
+{% endblock %}

@@ -1,109 +1,64 @@
-<!-- todo/templates/tasks_list.html -->
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
-    <meta name="description"
-      content=""/>
-    <meta name="keywords"
-      content=""/>
-<!-- nazwa aplikacji pobrana z ustawień -->
-    <title>{{ config.SITE_NAME }}</title>
-    <link rel="stylesheet" type="text/css" href="../static/style.css">
-    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
-</head>
+{% extends "index.html" %}
+{% block content %}
+    <!-- informacje o sukcesie lub błędzie -->
+<p>
+    {% if error %}
+        <strong class="error">Error!: {{ error }}</strong>
+    {% endif %}
 
+    {% for message in get_flashed_messages() %}
+        <strong class="success">{{ message }}</strong>
+    {% endfor %}
+</p>
 
-<body>
-    <div id="container">
-        <div><h1>{{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom"></h1></div>
-        <div id="header">
-            <div id="header1">
-                <form class="add-form" method="POST" action="{{ url_for('logout') }}">
-                    <label><button type="submit"><b>Log out</b></button></label>
-                </form>
-            </div>
-            <div id="header2"><h3>Profile:&nbsp;{{ g.user.username }}</h3></div>
-        </div>
-        <div style="clear: both"></div>
-            <!-- informacje o sukcesie lub błędzie -->
-        <p>
-            {% if error %}
-                <strong class="error">Error!: {{ error }}</strong>
-            {% endif %}
+<div id="content">
+<!-- formularz dodawania zadania -->
+<form class="add-form" method="POST" action="{{ url_for('insert') }}">
+    <label><input name="task" value=""/></label>
+    <label><button class="b1" type="submit">Add Task</button></label>
+</form>
 
-            {% for message in get_flashed_messages() %}
-                <strong class="success">{{ message }}</strong>
-            {% endfor %}
-        </p>
+<form id="eraser" method="POST" action="{{ url_for('erase') }}">
+    <label><button type="submit" class="b2">Delete<br>Task</button> </label>
+</form>
+<ol>
+<!-- wypisujemy kolejno wszystkie zadania -->
+{% for i in tasks %}
+    <li>
+        <table>
+            <tbody>
+            <tr valign="top">
+                <td>
+                    <label>
+                        <input id="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser">
+                    </label>
+                </td>
+                <!-- wyróznienie zadań zakończonych -->
+                <td>
+                    {% if i.executed %}
+                    <span class="done">
+                    {% endif %}
 
-        <div id="content">
-    <!-- formularz dodawania zadania -->
-        <form class="add-form" method="POST" action="{{ url_for('insert') }}">
-            <label><input name="task" value=""/></label>
-            <label><button class="b1" type="submit">Add Task</button></label>
-        </form>
+                    {{ i.task }} &nbsp;&nbsp;&nbsp;- <em>{{ i.data_pub }}</em>
 
-        <form id="eraser" method="POST" action="{{ url_for('erase') }}">
-            <label><button type="submit" class="b2">Delete<br>Task</button> </label>
-        </form>
-        <ol>
-        <!-- wypisujemy kolejno wszystkie zadania -->
-        {% for i in tasks %}
-            <li>
-                <table>
-                    <tbody>
-                    <tr valign="top">
-                        <td>
-                            <label>
-                                <input id="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser">
-                            </label>
-                        </td>
-                        <!-- wyróznienie zadań zakończonych -->
-                        <td>
-                            {% if i.executed %}
-                            <span class="done">
-                            {% endif %}
-
-                            {{ i.task }} &nbsp;&nbsp;&nbsp;- <em>{{ i.data_pub }}</em>
-
-                            {% if i.executed %}
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td>
-                        {% if not i.executed %}
-                            <!-- wysyłamy jedynie informacje o id zadania -->
-                            <form class="form2" method="POST" action="{{ url_for('executed') }}">
-                                <label><input type="hidden" name="execute" value="{{ i.id }}"/></label>
-                                <button type="submit" class="b1">Execute!</button>
-                            </form>
-                        {% endif %}
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </li>
-
-        {% endfor %}
-        </ol>
-        </div>
-    </div>
-    <div id="footer">
-
-        <form class="del-form" method="POST" action="{{ url_for('delete_account') }}">
-            <label>
-                <button type="submit" class="b3" onclick="return confirm('Are you sure you want to delete your account?');">
-                    <b>Delete account</b>
-                </button>
-            </label>
-        </form>
-
-        <div class="foot1">
-            2016 &copy; Maciej Pęśko<br>
-            <img src="../static/mail.ico" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
-        </div>
-    </div>
-</body>
-</html>
+                    {% if i.executed %}
+                    </span>
+                    {% endif %}
+                </td>
+                <td>
+                {% if not i.executed %}
+                    <!-- wysyłamy jedynie informacje o id zadania -->
+                    <form class="form2" method="POST" action="{{ url_for('executed') }}">
+                        <label><input type="hidden" name="execute" value="{{ i.id }}"/></label>
+                        <button type="submit" class="b1">Execute!</button>
+                    </form>
+                {% endif %}
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </li>
+{% endfor %}
+</ol>
+</div>
+{% endblock %}

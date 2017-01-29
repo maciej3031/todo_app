@@ -1,0 +1,59 @@
+<!-- todo/templates/index.html -->
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="description"
+      content=""/>
+    <meta name="keywords"
+      content=""/>
+<!-- nazwa aplikacji pobrana z ustawień -->
+    <title>{{ config.SITE_NAME }}</title>
+    <link rel="stylesheet" type="text/css" href="../static/style.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+</head>
+
+<body>
+    <div id="container">
+        <header>
+            <div>
+                <h1>
+                    <a class="title2" href="{{ url_for('insert') }}">
+                        {{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom">
+                    </a>
+                </h1>
+            </div>
+            <div id="header">
+                <div class="header1">
+                    <form class="add-form" method="POST" action="{{ url_for('tasks') }}">
+                        <label><button class="b4" type="submit"><b>My Tasks</b></button></label>
+                    </form>
+                </div>
+                <div class="header1">
+                    <form class="add-form" method="POST" action="{{ url_for('settings') }}">
+                        <label><button class="b4" type="submit"><b>Settings</b></button></label>
+                    </form>
+                </div>
+                <div id="header2">
+                    <form class="add-form" method="POST" action="{{ url_for('logout') }}">
+                        <label><button class="b4" type="submit"><b>Log out</b></button></label>
+                    </form>
+                </div>
+                <div id="header3"><h3>Profile:&nbsp;{{ g.user.username }}</h3></div>
+            </div>
+            <div style="clear: both"></div>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    <footer>
+
+        <div class="foot1">
+            2016 &copy; Maciej Pęśko<br>
+            <img src="../static/mail.ico" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
+        </div>
+    </footer>
+</body>
+</html>

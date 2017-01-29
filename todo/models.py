@@ -1,6 +1,4 @@
-# import sqlite3
-from todo import app, db
-# from flask import g
+from todo import db
 
 
 class User(db.Model):
@@ -14,11 +12,6 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
-
-    # def __init__(self, id):
-    #     self.username = id
-    #     db = get_db()
-    #     self.password = db.execute('SELECT password FROM users WHERE username = ?;', (self.username,)).fetchone()["password"]
 
     def is_active(self):
         """logged in user always active"""
@@ -50,13 +43,3 @@ class Task(db.Model):
 
     def __repr__(self):
         return '<User {}>'.format(self.task)
-
-
-# def get_db():
-#     """Connecting with database"""
-#
-#     if not hasattr(g, 'db'):        # jeżeli brak połączenia, to je tworzymy
-#         con = sqlite3.connect(app.config['DATABASE'])
-#         con.row_factory = sqlite3.Row
-#         g.db = con      # zapisujemy połączenie w kontekście aplikacji
-#     return g.db      # zwracamy połączenie z bazą

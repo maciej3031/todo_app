@@ -7,7 +7,7 @@ from flask_login import login_required, current_user, login_user, logout_user
 from passlib.hash import argon2
 from todo import app, login_manager, db
 from .models import User, Task
-# from .forms import TaskForm
+import re
 
 
 @login_manager.user_loader
@@ -16,13 +16,6 @@ def user_loader(user_id):
 
     return User.query.get(user_id)
 
-
-# @app.teardown_request
-# def close_db(error):
-#     """Closes connection with database"""
-#
-#     if hasattr(g, 'db'):
-#         g.db.close()
 
 @app.before_request
 def before_request():
@@ -46,9 +39,9 @@ def login():
                     flash('Logged in successfully')
                     return redirect(url_for("insert"))
                 else:
-                    error = "Incorrect login or password"  # komunikat o błędzie
+                    error = "Incorrect password"  # komunikat o błędzie
             else:
-                error = "Incorrect login or password"  # komunikat o błędzie
+                error = "No such user"  # komunikat o błędzie
         else:
             error = "Incorrect login or password"  # komunikat o błędzie
 
@@ -67,6 +60,8 @@ def logout():
 
 @app.route('/register_dir', methods=['GET', 'POST'])
 def register_dir():
+    """Renders register page"""
+
     return render_template('register.html')
 
 
@@ -78,22 +73,29 @@ def register():
     if request.method == 'POST':
         username = request.form['login']
         password = request.form['password']
-        if password and username:       # sprawdzenie czy podano zarówno login jak i hasło
-            password = argon2.using(rounds=4).hash(password)       #hashowanie hasła przy pomocy Argon2
-            # db = get_db()
-            # user_data = db.execute('SELECT username FROM users WHERE username = ?', (username, )).fetchone()
-            user_data = User.query.filter_by(username=username).first()
-            if not user_data:   # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
-                # db.execute('INSERT INTO users VALUES (?,?)', (username, password))
-                user = User(username=username, password=password)
-                db.session.add(user)
-                db.session.commit()
-                info = "Profile was created successfully"
-                return render_template('login.html', info=info)
+        confpass = request.form['password2']
+        email = request.form['email']
+        if password and confpass and username and email:       # sprawdzenie czy podano zarówno login, mail jak i hasło
+            pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+            if re.match(pattern, email):        # sprawdzenie poprawności maila
+                user_data = User.query.filter_by(username=username).first()
+                email_data = User.query.filter_by(email=email).first()
+                if not user_data and not email_data:     # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
+                    if password == confpass:        # sprawdzenie zgodonści podanych haseł
+                        password = argon2.using(rounds=4).hash(password)    # hashowanie hasła przy pomocy Argon2
+                        user = User(username=username, password=password, email=email)
+                        db.session.add(user)
+                        db.session.commit()
+                        info = "Profile was created successfully"
+                        return render_template('login.html', info=info)
+                    else:
+                        error = "Passwords do not match"  # komunikat o błędzie
+                else:
+                    error = "Login or email already exists"  # komunikat o błędzie
             else:
-                error = "Incorrect data or login already exists"  # komunikat o błędzie
+                error = "Incorrect email address"  # komunikat o błędzie
         else:
-            error = "Incorrect data or login already exists"  # komunikat o błędzie
+            error = "Incorrect data"  # komunikat o błędzie
 
     return render_template('register.html', error=error)
 
@@ -104,14 +106,11 @@ def insert():
     """Adding and displaying tasks"""
 
     error = None
-    # db = get_db()
-    # form1 = TaskForm(request.form)
     if request.method == 'POST':
         if len(request.form['task']) > 0:
             task_text = request.form['task']
             executed = 0
             data_pub = datetime.now().replace(microsecond=0)    # usuwamy mikrosekundy
-            # db.execute('INSERT INTO tasks VALUES (?,?,?,?,?);', (None, task, executed, data_pub, g.user.username))
             task = Task(task=task_text, executed=executed, data_pub=data_pub, username=g.user.username)
             db.session.add(task)
             db.session.commit()
@@ -120,7 +119,6 @@ def insert():
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
 
-    # tasks = db.execute('SELECT * FROM tasks WHERE username = ? ORDER BY data_pub DESC;', (g.user.username,)).fetchall()
     tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).all()
     return render_template('tasks_list.html', tasks=tasks, error=error)
 
@@ -131,46 +129,89 @@ def executed():
     """Changing status of a task to executed """
 
     task_id = request.form['execute']
-    # db = get_db()
-    # db.execute("UPDATE tasks SET executed = ? WHERE id = ?", (1, task_id))
     task = Task.query.filter_by(id=task_id).first()
     task.executed = 1
     db.session.commit()
     return redirect(url_for('insert'))
 
 
-# @app.route('/tasks_create', methods=['POST'])
-# @login_required
-# def task_create():
-#     """Deletes a given tasks or changes status of a task to executed"""
-#
-#     form1 = TaskForm(request.form)
-#     if form1.validate_on_submit():
-#         if form1.executed_button.data:
-#             task_id = request.form['execute']
-#             db = get_db()
-#             db.execute("UPDATE tasks SET executed = ? WHERE id = ?", (1, task_id))
-#             db.commit()
-#             return redirect(url_for('insert'))
-#         elif form1.erase_button.data:
-#             for i in request.form.getlist('erase'):
-#                 db = get_db()
-#                 db.execute("DELETE FROM tasks WHERE id = ?", (i, ))
-#                 db.commit()
-#             return redirect(url_for('insert'))
-
-
 @app.route('/erase', methods=['POST'])
 @login_required
 def erase():
     """Deletes a given task"""
+
     for i in request.form.getlist('erase'):
-        # db = get_db()
-        # db.execute("DELETE FROM tasks WHERE id = ?", (i, ))
         task = Task.query.filter_by(id=i).first()
         db.session.delete(task)
         db.session.commit()
     return redirect(url_for('insert'))
+
+
+@app.route('/settings', methods=['POST'])
+@login_required
+def settings():
+    """Renders settings page"""
+
+    return render_template('settings.html')
+
+
+@app.route('/tasks', methods=['POST'])
+@login_required
+def tasks():
+    """Renders tasks list page"""
+
+    tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).all()
+    return render_template('tasks_list.html', tasks=tasks)
+
+
+@app.route('/change_profile_data', methods=['GET', 'POST'])
+def change_profile_data():
+    """Sign up method"""
+
+    error = None
+    info = None
+    if request.method == 'POST':
+        username = request.form['login']
+        password = request.form['password']
+        confpass = request.form['password2']
+        email = request.form['email']
+
+        pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+        if email and re.match(pattern, email):        # sprawdzenie poprawności maila
+            email_data = User.query.filter_by(email=email).first()
+            if not email_data:
+                user = User.query.filter_by(username=g.user.username).first()
+                user.email = email
+                db.session.commit()
+                info = 'Changes were saved'
+            else:
+                flash("email address already exists")  # komunikat o błędzie
+
+        if username:
+            user_data = User.query.filter_by(username=username).first()
+            if not user_data:
+                user = User.query.filter_by(username=g.user.username).first()
+                tasks = Task.query.filter_by(username=g.user.username).all()
+                for i in tasks:
+                    i.username = username
+                user.username = username
+                db.session.commit()
+                info = 'Changes were saved'
+                login_user(user)
+            else:
+                flash("login already exists")  # komunikat o błędzie
+
+        if password:
+            if password == confpass:        # sprawdzenie zgodonści podanych haseł
+                password = argon2.using(rounds=4).hash(password)    # hashowanie hasła przy pomocy Argon2
+                user = User.query.filter_by(username=g.user.username).first()
+                user.password = password
+                db.session.commit()
+                info = 'Changes were saved'
+            else:
+                flash("Passwords do not match")  # komunikat o błędzie
+
+    return render_template('settings.html', info=info, error=error)
 
 
 @app.route('/delete_account', methods=['POST'])
@@ -178,9 +219,6 @@ def erase():
 def delete_account():
     """Deletes account permanently"""
 
-    # db = get_db()
-    # db.execute("DELETE FROM users WHERE username = ?", (g.user.username,))
-    # db.execute("DELETE FROM tasks WHERE username = ?", (g.user.username,))
     tasks = Task.query.filter_by(username=g.user.username).all()
     for i in tasks:
         db.session.delete(i)
