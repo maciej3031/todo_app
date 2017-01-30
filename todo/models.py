@@ -5,7 +5,7 @@ class User(db.Model):
     """User class"""
 
     # tworzymy kolumny w bazie danych jak atrybuty klasy
-    username = db.Column(db.Text, primary_key=True, unique=True, nullable=False, autoincrement=True)
+    username = db.Column(db.Text, primary_key=True, unique=True, nullable=False)
     password = db.Column(db.Text, nullable=False, index=True)
     email = db.Column(db.Text, unique=True, index=True)
     tasks = db.relationship('Task', backref='author', lazy='dynamic')

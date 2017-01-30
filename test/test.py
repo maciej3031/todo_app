@@ -55,6 +55,10 @@ class FlaskTest(unittest.TestCase):
     def delete_account(self):
         return self.app.post('/delete_account', follow_redirects=True)
 
+    def change_profile_data(self, username, password, password2, email):
+        return self.app.post('/change_profile_data', data=dict(login=username, password=password, password2=password2,
+                                                               email=email), follow_redirects=True)
+
     # Tests
 
     def test_main_page(self):
@@ -152,6 +156,36 @@ class FlaskTest(unittest.TestCase):
         self.assertFalse(Task.query.filter_by(username='user').first())
         self.assertFalse(User.query.filter_by(username='user').first())
         self.assertIn(b'Account was deleted permanently', response.data)
+
+    def test_view_settings_page(self):
+        response = self.app.get('/settings', follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+
+    def test_valid_change_profile_data(self):
+        self.login('user', 'password')
+        response = self.change_profile_data('user1234', 'password23', 'password23', 'test2@test.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Changes were saved', response.data)
+
+    def test_invalid_change_profile_data_passsword_do_not_match(self):
+        self.login('user', 'password')
+        response = self.change_profile_data('user1234', 'password23', 'password2', 'test2@test.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'Passwords do not match', response.data)
+
+    def test_invalid_change_profile_data_login_already_exists(self):
+        self.register('user1', 'password1', 'password1', 'test@gmail.com')
+        self.login('user', 'password')
+        response = self.change_profile_data('user1', '', '', '')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'login already exists', response.data)
+
+    def test_invalid_change_profile_data_email_already_exists(self):
+        self.register('user1', 'password1', 'password1', 'test@gmail.com')
+        self.login('user', 'password')
+        response = self.change_profile_data('', '', '', 'test@gmail.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'email address already exists', response.data)
 
 if __name__ == '__main__':
     unittest.main()

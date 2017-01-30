@@ -48,7 +48,7 @@ def login():
     return render_template('login.html', error=error)
 
 
-@app.route('/logout', methods=['GET', 'POST'])
+@app.route('/logout', methods=['GET'])
 @login_required
 def logout():
     """log out method"""
@@ -56,13 +56,6 @@ def logout():
     logout_user()
     info = "logged out successfully"
     return render_template('login.html', info=info)
-
-
-@app.route('/register_dir', methods=['GET', 'POST'])
-def register_dir():
-    """Renders register page"""
-
-    return render_template('register.html')
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -147,7 +140,7 @@ def erase():
     return redirect(url_for('insert'))
 
 
-@app.route('/settings', methods=['POST'])
+@app.route('/settings', methods=['GET'])
 @login_required
 def settings():
     """Renders settings page"""
@@ -155,16 +148,8 @@ def settings():
     return render_template('settings.html')
 
 
-@app.route('/tasks', methods=['POST'])
-@login_required
-def tasks():
-    """Renders tasks list page"""
-
-    tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).all()
-    return render_template('tasks_list.html', tasks=tasks)
-
-
 @app.route('/change_profile_data', methods=['GET', 'POST'])
+@login_required
 def change_profile_data():
     """Sign up method"""
 
