@@ -43,8 +43,8 @@ class FlaskTest(unittest.TestCase):
     def logout(self):
         return self.app.get('/logout', follow_redirects=True)
 
-    def insert(self, task):
-        return self.app.post('/insert', data=dict(task=task), follow_redirects=True)
+    def user(self, task, date):
+        return self.app.post('/user/<username>', data=dict(task=task, date=date), follow_redirects=True)
 
     def executed(self, task_id):
         return self.app.post('/executed', data=dict(execute=task_id), follow_redirects=True)
@@ -125,14 +125,21 @@ class FlaskTest(unittest.TestCase):
 
     def test_insert_task(self):
         self.login('user', 'password')
-        response = self.insert('task1 task1 task1')
+        response = self.user('task1 task1 task1', "2017-01-19T04:00")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'New task added.', response.data)
+        self.assertTrue(Task.query.filter_by(task="task1 task1 task1").first())
+
+    def test_insert_task_with_no_date(self):
+        self.login('user', 'password')
+        response = self.user('task1 task1 task1', "")
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'New task added.', response.data)
         self.assertTrue(Task.query.filter_by(task="task1 task1 task1").first())
 
     def test_insert_invalid_empty_task(self):
         self.login('user', 'password')
-        response = self.insert('')
+        response = self.user('', '2017-01-19T04:00')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Error!: You cannot add empty task!', response.data)
         self.assertFalse(Task.query.filter_by(task="").first())
@@ -148,6 +155,7 @@ class FlaskTest(unittest.TestCase):
         response = self.erase([0, 1])
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Task.query.filter_by(username='user').all())
+        self.assertIn(b'Tasks deleted!', response.data)
 
     def test_delete_account(self):
         self.login('user', 'password')
@@ -186,6 +194,21 @@ class FlaskTest(unittest.TestCase):
         response = self.change_profile_data('', '', '', 'test@gmail.com')
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'email address already exists', response.data)
+
+    def test_remind_password_page(self):
+        response = self.app.get('/remind_password', follow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+
+    def test_valid_password_reset(self):
+        self.register('user1', 'password1', 'password1', 'tyson3031@onet.pl')
+        response = self.app.post('/password_reset', data=dict(email='tyson3031@onet.pl'), follow_redirects=True)
+        self.assertIn(b'New password has been sent to given email address!', response.data)
+        self.assertEqual(response.status_code, 200)
+
+    def test_invalid_password_reset(self):
+        response = self.app.post('/password_reset', data=dict(email='bad-email.pl'), follow_redirects=True)
+        self.assertIn(b'No user with given email address!', response.data)
+        self.assertEqual(response.status_code, 200)
 
 if __name__ == '__main__':
     unittest.main()

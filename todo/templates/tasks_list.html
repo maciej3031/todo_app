@@ -1,26 +1,31 @@
 {% extends "index.html" %}
 {% block content %}
     <!-- informacje o sukcesie lub błędzie -->
-<p>
-    {% if error %}
-        <strong class="error">Error!: {{ error }}</strong>
-    {% endif %}
 
-    {% for message in get_flashed_messages() %}
-        <strong class="success">{{ message }}</strong>
-    {% endfor %}
-</p>
 
 <div id="content">
-<!-- formularz dodawania zadania -->
-<form class="add-form" method="POST" action="{{ url_for('insert') }}">
-    <label><input name="task" value=""/></label>
-    <label><button class="b1" type="submit">Add Task</button></label>
-</form>
+<div id="bar">
+    <p>
+        {% if error %}
+            <strong class="error">Error!: {{ error }}</strong>
+        {% endif %}
 
-<form id="eraser" method="POST" action="{{ url_for('erase') }}">
-    <label><button type="submit" class="b2">Delete<br>Task</button> </label>
-</form>
+        {% for message in get_flashed_messages() %}
+            <strong class="success">{{ message }}</strong>
+        {% endfor %}
+    </p>
+
+    <!-- formularz dodawania zadania -->
+    <form class="add-form2" method="POST" action="{{ url_for('user', username=g.user.username) }}">
+        <label><input class=focus name="task" value=""/></label>
+        <label><input class=focus type="datetime-local" data-date-inline-picker="false" data-date-open-on-focus="true" name="date"/></label>
+        <label><button class="b1" type="submit"><b>Add Task</b></button></label>
+    </form>
+
+    <form id="eraser" method="POST" action="{{ url_for('erase') }}">
+        <label><button type="submit" class="b2">Delete<br>Task</button> </label>
+    </form>
+</div>
 <ol>
 <!-- wypisujemy kolejno wszystkie zadania -->
 {% for i in tasks %}
@@ -30,7 +35,7 @@
             <tr valign="top">
                 <td>
                     <label>
-                        <input id="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser">
+                        <input class="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser">
                     </label>
                 </td>
                 <!-- wyróznienie zadań zakończonych -->
@@ -50,7 +55,7 @@
                     <!-- wysyłamy jedynie informacje o id zadania -->
                     <form class="form2" method="POST" action="{{ url_for('executed') }}">
                         <label><input type="hidden" name="execute" value="{{ i.id }}"/></label>
-                        <button type="submit" class="b1">Execute!</button>
+                        <button type="submit" class="b5">Execute!</button>
                     </form>
                 {% endif %}
                 </td>

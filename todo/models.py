@@ -38,7 +38,7 @@ class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     task = db.Column(db.Text, nullable=False)
     executed = db.Column(db.Boolean, nullable=False)
-    data_pub = db.Column(db.DateTime, nullable=False)
+    data_pub = db.Column(db.TEXT)
     username = db.Column(db.Text, db.ForeignKey("user.username"), nullable=False,)     #user to nazwa tabeli
 
     def __repr__(self):

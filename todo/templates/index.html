@@ -19,14 +19,14 @@
         <header>
             <div>
                 <h1>
-                    <a class="title2" href="{{ url_for('insert') }}">
+                    <a class="title2" href="{{ url_for('user', username=g.user.username) }}">
                         {{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom">
                     </a>
                 </h1>
             </div>
             <div id="header">
                 <div class="header1">
-                    <form class="add-form" method="GET" action="{{ url_for('insert') }}">
+                    <form class="add-form" method="GET" action="{{ url_for('user', username=g.user.username) }}">
                         <label><button class="b4" type="submit"><b>My Tasks</b></button></label>
                     </form>
                 </div>

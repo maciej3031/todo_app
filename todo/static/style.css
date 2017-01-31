@@ -43,7 +43,7 @@ main
 #container
 {
     background-color: floralwhite;
-    width: 720px;
+    width: 820px;
     margin-left: auto;
     margin-right: auto;
     height: calc(100vh - 60px);
@@ -66,7 +66,7 @@ main
 
 #header
 {
-    width: 680px;
+    width: auto;
     margin-top: -20px;
     margin-bottom: -30px;
     margin-left: auto;
@@ -97,7 +97,7 @@ main
 {
     float: left;
     width: auto;
-    margin-right: 20px;
+    margin-right: 10px;
     text-align: right;
 }
 
@@ -106,10 +106,20 @@ main
     min-height: 250px;
 }
 
+#bar
+{
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: 25px;
+    padding-bottom: 25px;
+    padding-top: 5px;
+    background-color: #FFECB3;
+}
+
 footer
 {
     height: 30px;
-    width: 680px;
+    width: 780px;
     margin-right: auto;
     margin-left: auto;
     text-align: right;
@@ -147,6 +157,15 @@ h1, h3, p
 {
     text-align: center;
     margin-bottom: -20px;
+
+}
+
+.add-form2
+{
+    text-align: center;
+    margin-bottom: -20px;
+    margin-left: 40px;
+
 }
 
 .del-form
@@ -165,7 +184,7 @@ h1, h3, p
 ol
 {
     text-align: left;
-    margin-top: 22px;
+    margin-top: -5px;
 }
 
 li table
@@ -178,7 +197,7 @@ li
      min-height: 35px;
 }
 
-#chbx
+.chbx
 {
     margin-top: 4px
 }
@@ -199,12 +218,17 @@ input[name="task"]
     width: 330px;
 }
 
-input[name="task"]:focus
+
+.focus:focus
 {
     border-color: blue;
     border-radius: 5px;
 }
 
+.focus
+{
+    margin-left: 10px;
+}
 
 button
 {
@@ -217,10 +241,26 @@ button
 button:hover
 {
     cursor: pointer;
-    background: #FBC02D;
+    background: #FFECB3;
 }
 
 .b1
+{
+    cursor: pointer;
+    font-size: 11px;
+    background: #FFECB3;
+    color: #0288D1;
+    border: none;
+
+}
+
+.b1:hover
+{
+    background: #FFECB3;
+    color: #40C4FF;
+}
+
+.b5
 {
     cursor: pointer;
     font-size: 11px;
@@ -230,25 +270,24 @@ button:hover
 
 }
 
-.b1:hover
+.b5:hover
 {
     background: floralwhite;
-    color: #81C784;
+    color: #64DD17;
 }
-
 
 .b2
 {
     cursor: pointer;
     font-size: 11px;
-    background: floralwhite;
+    background: #FFECB3;
     border: none;
     color: #BF360C;
 }
 
 .b2:hover
 {
-    background: floralwhite;
+    background: #FFECB3;
     color: #FF5722;
 }
 
@@ -266,8 +305,8 @@ button:hover
 #eraser
 {
     height: 20px;
-    margin-left: 30px;
-    margin-top: -25px;
+    margin-left: 48px;
+    margin-top: -30px;
 }
 
 .error { color: red; }

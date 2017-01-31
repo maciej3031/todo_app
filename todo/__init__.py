@@ -1,10 +1,12 @@
 from flask import Flask
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail
 
 app = Flask(__name__)               # stworzenie aplikacji
 app.config.from_object('config')       # konfiguracja aplikacji wczytana z modułu config.py
 db = SQLAlchemy(app)            # utworzenie obiektu bazy danych
+mail = Mail(app)            # utworzenie możliwości wysyłania emaili
 
 login_manager = LoginManager()
 login_manager.init_app(app)         #połączenie flask-login z flask

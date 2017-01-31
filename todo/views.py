@@ -5,10 +5,12 @@ from flask import g, render_template, flash, redirect, url_for, request, session
 from datetime import datetime
 from flask_login import login_required, current_user, login_user, logout_user
 from passlib.hash import argon2
-from todo import app, login_manager, db
+from todo import app, login_manager, db, mail
 from .models import User, Task
+from flask_mail import Message
 import re
-
+import random
+random.seed()
 
 @login_manager.user_loader
 def user_loader(user_id):
@@ -37,7 +39,7 @@ def login():
                 if argon2.verify(password, user.password):   # sprawdzamy czy login i hasło zgodne z danymi w bazie przy pomocy Argon2
                     login_user(user, remember=remember_me)
                     flash('Logged in successfully')
-                    return redirect(url_for("insert"))
+                    return redirect(url_for("user", username=g.user.username))
                 else:
                     error = "Incorrect password"  # komunikat o błędzie
             else:
@@ -93,22 +95,26 @@ def register():
     return render_template('register.html', error=error)
 
 
-@app.route('/insert', methods=['GET', 'POST'])
+@app.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
-def insert():
+def user(username):
     """Adding and displaying tasks"""
 
     error = None
     if request.method == 'POST':
-        if len(request.form['task']) > 0:
-            task_text = request.form['task']
+        task_text = request.form['task']
+        task_date = request.form['date']
+        if len(task_text) > 0:
             executed = 0
-            data_pub = datetime.now().replace(microsecond=0)    # usuwamy mikrosekundy
+            if task_date:
+                data_pub = " ".join(str(task_date).split('T'))
+            else:
+                data_pub = ""
             task = Task(task=task_text, executed=executed, data_pub=data_pub, username=g.user.username)
             db.session.add(task)
             db.session.commit()
             flash('New task added.')
-            return redirect(url_for('insert'))
+            return redirect(url_for('user', username=g.user.username))
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
 
@@ -125,7 +131,7 @@ def executed():
     task = Task.query.filter_by(id=task_id).first()
     task.executed = 1
     db.session.commit()
-    return redirect(url_for('insert'))
+    return redirect(url_for('user', username=g.user.username))
 
 
 @app.route('/erase', methods=['POST'])
@@ -137,7 +143,8 @@ def erase():
         task = Task.query.filter_by(id=i).first()
         db.session.delete(task)
         db.session.commit()
-    return redirect(url_for('insert'))
+    flash('Tasks deleted!')
+    return redirect(url_for('user', username=g.user.username))
 
 
 @app.route('/settings', methods=['GET'])
@@ -213,3 +220,46 @@ def delete_account():
     logout_user()
     flash('Account was deleted permanently')
     return render_template('login.html')
+
+
+@app.route('/remind_password', methods=['GET'])
+def remind_password():
+    """Renders remind_password page"""
+
+    return render_template('remind_password.html')
+
+
+@app.route('/password_reset', methods=['POST'])
+def password_reset():
+    email = request.form['email']
+    letters = "abcdefghijklmnoprstuvwxyz"
+    numbers = "1234567890"
+
+    def password_generator():
+        x = random.randint(4, 6)
+        y = random.randint(2, 3)
+        word = [random.choice([i for i in letters]) for i in range(x)]
+        num = [random.choice([i for i in numbers]) for i in range(y)]
+        lista = word + num
+        random.shuffle(lista)
+        password = "".join(lista)
+        return password
+
+    user = User.query.filter_by(email=email).first()
+    error = None
+    if user:
+        try:
+            password = password_generator()
+            password_hashed = argon2.using(rounds=4).hash(password)
+            user.password = password_hashed
+            db.session.commit()
+            msg = Message("Reset password", sender='todoserver7@gmail.com', recipients=[user.email])
+            msg.body = "Hello {}! \nYour password has been changed. New password: {}. We recommend to change it" \
+                       " immediately. \n\nRegards, \ntodo team!".format(user.username, password)
+            mail.send(msg)
+            flash('New password has been sent to given email address!')
+        except Exception:
+            error = "There was a problem with You email address. It looks like it doesn't exist or something..."
+    else:
+        error = "No user with given email address!"
+    return render_template('login.html', error=error)

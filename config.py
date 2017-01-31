@@ -7,3 +7,11 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'base.db')       
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository')    # repozytorium trzymające informacje o migracjach
 SITE_NAME = 'My Tasks'      # nazwa strony
 SQLALCHEMY_TRACK_MODIFICATIONS = True
+
+#EMAIL SETTINGS
+MAIL_USE_TLS = False
+MAIL_SERVER = 'smtp.gmail.com'
+MAIL_PORT = 465
+MAIL_USE_SSL = True
+MAIL_USERNAME = 'todoserver7@gmail.com'
+MAIL_PASSWORD = 'todo3031'
