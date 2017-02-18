@@ -2,23 +2,19 @@
 {% block content %}
     <!-- informacje o sukcesie lub błędzie -->
 <p>
-    {% for message in get_flashed_messages() %}
-        <strong class="error">Error!: {{ message }}</strong>
+   {% for message in get_flashed_messages() %}
+        <strong class="success">{{ message }}</strong>
     {% endfor %}
 
     {% if error %}
         <strong class="error">Error: {{ error }}</strong>
-    {% endif %}
-
-    {% if info %}
-        <strong class="success">{{ info }}</strong>
     {% endif %}
 </p>
 
 <div id="content">
     <h3 style="margin-left: 40px;">Change your profile info:</h3>
     <!-- formularz zmian -->
-    <form class="add-form" method="POST" action="{{ url_for('change_profile_data') }}">
+    <form class="add-form" method="POST" action="{{ url_for('settings') }}">
             <p style="margin-left: 28px">
                 <label>E-mail: <input type="text" name="email" placeholder="i.e. nick123@gmail.com"></label>
             </p>

@@ -3,9 +3,6 @@
 
 <h3>Sign in</h3>
 <p>
-    {% if info %}
-        <strong class="success">{{ info }}</strong>
-    {% endif %}
     {% if error %}
         <strong class="error">Error: {{ error }}</strong>
     {% endif %}
@@ -31,8 +28,8 @@
 
 <p style="margin-top: 45px">
     <!-- formularz rejestracji -->
-    <form class="add-form" method="GET" action="{{ url_for('remind_password') }}">
-        Forgot You password? <button type="submit"><b>Remind me!</b></button>
+    <form class="add-form" method="GET" action="{{ url_for('password_reset') }}">
+        Forgot You password? <button type="submit"><b>Reset password!</b></button>
     </form>
 </p>
 

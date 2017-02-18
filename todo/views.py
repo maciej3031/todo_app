@@ -6,7 +6,7 @@ from datetime import datetime
 from flask_login import login_required, current_user, login_user, logout_user
 from passlib.hash import argon2
 from todo import app, login_manager, db, mail
-from .models import User, Task
+from .models import User, Task, Question, Choice, Opinion
 from flask_mail import Message
 import re
 import random
@@ -56,8 +56,8 @@ def logout():
     """log out method"""
 
     logout_user()
-    info = "logged out successfully"
-    return render_template('login.html', info=info)
+    flash("logged out successfully")
+    return redirect(url_for("login"))
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -81,8 +81,8 @@ def register():
                         user = User(username=username, password=password, email=email)
                         db.session.add(user)
                         db.session.commit()
-                        info = "Profile was created successfully"
-                        return render_template('login.html', info=info)
+                        flash("Profile was created successfully")
+                        return redirect(url_for("login"))
                     else:
                         error = "Passwords do not match"  # komunikat o błędzie
                 else:
@@ -122,6 +122,44 @@ def user(username):
     return render_template('tasks_list.html', tasks=tasks, error=error)
 
 
+@app.route('/poll', methods=['POST', 'GET'])
+@login_required
+def poll():
+    """Voting logic"""
+
+    question = Question.query.order_by(Question.id).all()
+    if request.method == 'POST':
+        selected_choice1 = request.form.get('choice1')
+        opinion_text = request.form['choice2']
+        selected_choice3 = request.form.get('choice3')
+        error_text = request.form['choice4']
+
+        if selected_choice1 and selected_choice3:
+            choice1 = Choice.query.filter_by(id=selected_choice1).first()
+            choice1.votes += 1
+            choice3 = Choice.query.filter_by(id=selected_choice3).first()
+            choice3.votes += 1
+            db.session.commit()
+        else:
+            error = "You did not select a choice in all questions."
+            return render_template('results.html', error=error, question=question)
+        if opinion_text or error_text:
+            opinion = Opinion(opinion_text=opinion_text, error_text=error_text, pub_date=datetime.now())
+            db.session.add(opinion)
+            db.session.commit()
+        return redirect(url_for('results'))
+    else:
+        return render_template('poll.html', question=question)
+
+
+@app.route('/results', methods=['GET'])
+@login_required
+def results():
+    """Shows results template"""
+    question = Question.query.order_by(Question.id).all()
+    return render_template('results.html', question=question)
+
+
 @app.route('/executed', methods=['POST'])
 @login_required
 def executed():
@@ -147,20 +185,11 @@ def erase():
     return redirect(url_for('user', username=g.user.username))
 
 
-@app.route('/settings', methods=['GET'])
+@app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    """Renders settings page"""
+    """Changing profile data"""
 
-    return render_template('settings.html')
-
-
-@app.route('/change_profile_data', methods=['GET', 'POST'])
-@login_required
-def change_profile_data():
-    """Sign up method"""
-
-    error = None
     info = None
     if request.method == 'POST':
         username = request.form['login']
@@ -169,15 +198,20 @@ def change_profile_data():
         email = request.form['email']
 
         pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
-        if email and re.match(pattern, email):        # sprawdzenie poprawności maila
-            email_data = User.query.filter_by(email=email).first()
-            if not email_data:
-                user = User.query.filter_by(username=g.user.username).first()
-                user.email = email
-                db.session.commit()
-                info = 'Changes were saved'
+        if email:
+            if re.match(pattern, email):        # sprawdzenie poprawności maila
+                email_data = User.query.filter_by(email=email).first()
+                if not email_data:
+                    user = User.query.filter_by(username=g.user.username).first()
+                    user.email = email
+                    db.session.commit()
+                    info = 'Changes were saved'
+                else:
+                    error = "email address already exists"  # komunikat o błędzie
+                    return render_template('settings.html', error=error)
             else:
-                flash("email address already exists")  # komunikat o błędzie
+                error = "incorrect email address"
+                return render_template('settings.html', error=error)
 
         if username:
             user_data = User.query.filter_by(username=username).first()
@@ -191,9 +225,10 @@ def change_profile_data():
                 info = 'Changes were saved'
                 login_user(user)
             else:
-                flash("login already exists")  # komunikat o błędzie
+                error = "login already exists"  # komunikat o błędzie
+                return render_template('settings.html', error=error)
 
-        if password:
+        if password or confpass:
             if password == confpass:        # sprawdzenie zgodonści podanych haseł
                 password = argon2.using(rounds=4).hash(password)    # hashowanie hasła przy pomocy Argon2
                 user = User.query.filter_by(username=g.user.username).first()
@@ -201,9 +236,13 @@ def change_profile_data():
                 db.session.commit()
                 info = 'Changes were saved'
             else:
-                flash("Passwords do not match")  # komunikat o błędzie
+                error = "Passwords do not match"  # komunikat o błędzie
+                return render_template('settings.html', error=error)
+        if info:
+            flash(info)
+        return redirect(url_for('settings'))
 
-    return render_template('settings.html', info=info, error=error)
+    return render_template('settings.html')
 
 
 @app.route('/delete_account', methods=['POST'])
@@ -219,21 +258,14 @@ def delete_account():
     db.session.commit()
     logout_user()
     flash('Account was deleted permanently')
-    return render_template('login.html')
+    return redirect(url_for("login"))
 
 
-@app.route('/remind_password', methods=['GET'])
-def remind_password():
-    """Renders remind_password page"""
-
-    return render_template('remind_password.html')
-
-
-@app.route('/password_reset', methods=['POST'])
+@app.route('/password_reset', methods=['GET', 'POST'])
 def password_reset():
-    email = request.form['email']
-    letters = "abcdefghijklmnoprstuvwxyz"
-    numbers = "1234567890"
+    """Resets password"""
+
+    error = None
 
     def password_generator():
         x = random.randint(4, 6)
@@ -245,21 +277,26 @@ def password_reset():
         password = "".join(lista)
         return password
 
-    user = User.query.filter_by(email=email).first()
-    error = None
-    if user:
-        try:
-            password = password_generator()
-            password_hashed = argon2.using(rounds=4).hash(password)
-            user.password = password_hashed
-            db.session.commit()
-            msg = Message("Reset password", sender='todoserver7@gmail.com', recipients=[user.email])
-            msg.body = "Hello {}! \nYour password has been changed. New password: {}. We recommend to change it" \
-                       " immediately. \n\nRegards, \ntodo team!".format(user.username, password)
-            mail.send(msg)
-            flash('New password has been sent to given email address!')
-        except Exception:
-            error = "There was a problem with You email address. It looks like it doesn't exist or something..."
-    else:
-        error = "No user with given email address!"
-    return render_template('login.html', error=error)
+    if request.method == "POST":
+        email = request.form['email']
+        letters = "abcdefghijklmnoprstuvwxyz"
+        numbers = "1234567890"
+        user = User.query.filter_by(email=email).first()
+        if user:
+            try:
+                password = password_generator()
+                password_hashed = argon2.using(rounds=4).hash(password)
+                user.password = password_hashed
+                db.session.commit()
+                msg = Message("Reset password", sender='todoserver7@gmail.com', recipients=[user.email])
+                msg.body = "Hello {}! \nYour password has been changed. New password: {}. We recommend to change it" \
+                           " immediately. \n\nRegards, \ntodo team!".format(user.username, password)
+                mail.send(msg)
+                flash('New password has been sent to given email address!')
+                return redirect(url_for("login"))
+            except Exception:
+                error = "There was a problem with You email address. It looks like it doesn't exist or something..."
+        else:
+            error = "No user with given email address!"
+
+    return render_template('remind_password.html', error=error)

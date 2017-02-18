@@ -1,0 +1,38 @@
+{% extends "index.html" %}
+{% block content %}
+    <!-- informacje o sukcesie lub błędzie -->
+<p>
+    {% for message in get_flashed_messages() %}
+        <strong class="success">{{ message }}</strong>
+    {% endfor %}
+
+    {% if error %}
+        <strong class="error">Error: {{ error }}</strong>
+    {% endif %}
+</p>
+
+<div id="content" style="margin-left: 200px; margin-right: 200px">
+    {% if question[0] %}
+    <h3 class="h3">{{ question[0].question_text }}</h3>
+    <ul style="margin-left: 100px">
+    {% for choice in question[0].choices %}
+        <li>{{ choice.choice_text }} -- {{ choice.votes }} vote(s)</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if question[2] %}
+    <h3 class="h3">{{ question[2].question_text }}</h3>
+    <ul style="margin-left: 100px">
+    {% for choice in question[2].choices %}
+        <li>{{ choice.choice_text }} -- {{ choice.votes }} vote(s)</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form class="add-form" method="GET" action="{{ url_for('poll') }}">
+        <label><button class="b3" type="submit"><b>Vote again?</b></button></label>
+    </form>
+
+</div>
+{% endblock %}
