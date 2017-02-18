@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 from todo import app, db
 from config import basedir

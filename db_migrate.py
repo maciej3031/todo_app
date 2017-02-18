@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import imp
 from migrate.versioning import api
 from todo import db
