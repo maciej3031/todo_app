@@ -297,6 +297,6 @@ def password_reset():
             except Exception:
                 error = "There was a problem with You email address. It looks like it doesn't exist or something..."
         else:
-            error = "No user with given email address!"
+            error = "No user with given email address or address is wrong!"
 
     return render_template('remind_password.html', error=error)
