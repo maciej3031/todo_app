@@ -63,6 +63,32 @@ main
     text-decoration: none;
 }
 
+.pagination
+{
+    text-align: center;
+    font-size: 11px;
+}
+
+
+.pagination1
+{
+    cursor: pointer;
+    color: #2CAD20;
+    text-decoration: none;
+}
+
+.pagination2
+{
+    cursor: pointer;
+    color: #2CAD20;
+    text-decoration: none;
+}
+
+.pagination1:hover
+{
+    color: #64DD17;
+}
+
 #header
 {
     width: auto;
@@ -238,7 +264,7 @@ button
 {
     background: sandybrown;
     font-family: 'Roboto', sans-serif;
-    border-color: sienna ;
+    border-color: sienna;
     color: #6a3403;
 }
 
@@ -269,7 +295,7 @@ button:hover
     cursor: pointer;
     font-size: 11px;
     background: floralwhite;
-    color: #4CAF50;
+    color: #2CAD20;
     border: none;
 
 }

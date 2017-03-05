@@ -155,7 +155,7 @@ class TaskOperationsTest(unittest.TestCase):
         return self.app.post('/', data=dict(login=username, password=password), follow_redirects=True)
 
     def user(self, task, date):
-        return self.app.post('/user/<username>', data=dict(task=task, date=date), follow_redirects=True)
+        return self.app.post('/user/user', data=dict(task=task, date=date), follow_redirects=True)
 
     def executed(self, task_id):
         return self.app.post('/executed', data=dict(execute=task_id), follow_redirects=True)
@@ -423,6 +423,7 @@ class PollTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Opinion.query.filter_by(opinion_text="It's awesome website!").first())
         self.assertTrue(Opinion.query.filter_by(error_text='').first())
+        self.assertTrue(Opinion.query.filter_by(opinion_text="It's awesome website!").first().author == 'user')
 
     def test_valid_vote_error(self):
         self.login('user', 'password')
@@ -430,6 +431,7 @@ class PollTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Opinion.query.filter_by(error_text="It's broken!").first())
         self.assertTrue(Opinion.query.filter_by(opinion_text='').first())
+        self.assertTrue(Opinion.query.filter_by(error_text="It's broken!").first().author == 'user')
 
     def test_valid_vote_error_and_opinion(self):
         self.login('user', 'password')
@@ -437,6 +439,7 @@ class PollTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Opinion.query.filter_by(error_text="It's broken!").first())
         self.assertTrue(Opinion.query.filter_by(opinion_text="It's awesome website!").first())
+        self.assertTrue(Opinion.query.filter_by(error_text="It's broken!").first().author == 'user')
 
     def test_invalid_vote_not_all_options_chosen_version1(self):
         self.login('user', 'password')
@@ -445,6 +448,7 @@ class PollTest(unittest.TestCase):
         choice1 = Choice.query.filter_by(id=1).first()
         self.assertEqual(choice1.votes, 0)
         self.assertIn(b"You did not select a choice in all questions.", response.data)
+        self.assertFalse(Opinion.query.all())
 
     def test_invalid_vote_not_all_options_chosen_version2(self):
         self.login('user', 'password')
@@ -453,6 +457,7 @@ class PollTest(unittest.TestCase):
         choice1 = Choice.query.filter_by(id=3).first()
         self.assertEqual(choice1.votes, 0)
         self.assertIn(b"You did not select a choice in all questions.", response.data)
+        self.assertFalse(Opinion.query.all())
 
     def test_invalid_vote_not_all_options_chosen_version3_with_opinion_and_error(self):
         self.login('user', 'password')
@@ -463,6 +468,46 @@ class PollTest(unittest.TestCase):
         self.assertIn(b"You did not select a choice in all questions.", response.data)
         self.assertFalse(Opinion.query.filter_by(error_text="It's broken!").first())
         self.assertFalse(Opinion.query.filter_by(opinion_text="It's awesome website!").first())
+        self.assertFalse(Opinion.query.all())
+
+
+class PaginationTest(unittest.TestCase):
+    """Pagination testing class"""
+
+    def setUp(self):
+        app.config['TESTING'] = True
+        app.config['WTF_CSRF_ENABLED'] = False
+        app.config['DEBUG'] = True
+        app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'test/test.db')
+        self.app = app.test_client()
+        db.create_all()
+        password1 = argon2.using(rounds=4).hash("password")
+        user1 = User(username='user', password=password1, email="test@test.com")
+        db.session.add(user1)
+        for i in range(15):
+            task = Task(id=i, task="test task test", executed=False, data_pub="2017-01-19T04:00", username="user")
+            db.session.add(task)
+            db.session.commit()
+
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+
+    # Helper methods
+
+    def login(self, username, password):
+        return self.app.post('/', data=dict(login=username, password=password), follow_redirects=True)
+
+    # Tests
+
+    def test_pagination_number_of_pages(self):
+        self.login('user', 'password')
+        response1 = self.app.get('/user/user/1')
+        response2 = self.app.get('/user/user/2')
+        response3 = self.app.get('/user/user/3')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response3.status_code, 404)
 
 
 if __name__ == '__main__':

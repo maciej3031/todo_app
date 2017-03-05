@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 # todo/views.py
 
-from flask import g, render_template, flash, redirect, url_for, request, session
+from flask import g, render_template, flash, redirect, url_for, request, session, abort
 from datetime import datetime
 from flask_login import login_required, current_user, login_user, logout_user
 from passlib.hash import argon2
 from todo import app, login_manager, db, mail
 from .models import User, Task, Question, Choice, Opinion
 from flask_mail import Message
+from config import POSTS_PER_PAGE
 import re
 import random
 random.seed()
+
 
 @login_manager.user_loader
 def user_loader(user_id):
@@ -96,8 +98,9 @@ def register():
 
 
 @app.route('/user/<username>', methods=['GET', 'POST'])
+@app.route('/user/<username>/<int:page>', methods=['GET', 'POST'])
 @login_required
-def user(username):
+def user(username, page=1):
     """Adding and displaying tasks"""
 
     error = None
@@ -117,9 +120,11 @@ def user(username):
             return redirect(url_for('user', username=g.user.username))
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
-
-    tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).all()
-    return render_template('tasks_list.html', tasks=tasks, error=error)
+    if username == g.user.username:
+        tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).paginate(page, POSTS_PER_PAGE, True)
+        return render_template('tasks_list.html', tasks=tasks, error=error)
+    else:
+        return abort(404)
 
 
 @app.route('/poll', methods=['POST', 'GET'])
@@ -144,7 +149,7 @@ def poll():
             error = "You did not select a choice in all questions."
             return render_template('results.html', error=error, question=question)
         if opinion_text or error_text:
-            opinion = Opinion(opinion_text=opinion_text, error_text=error_text, pub_date=datetime.now())
+            opinion = Opinion(opinion_text=opinion_text, error_text=error_text, pub_date=datetime.now(), author=g.user.username)
             db.session.add(opinion)
             db.session.commit()
         return redirect(url_for('results'))

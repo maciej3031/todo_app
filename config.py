@@ -17,3 +17,6 @@ MAIL_PORT = 465
 MAIL_USE_SSL = True
 MAIL_USERNAME = 'todoserver7@gmail.com'
 MAIL_PASSWORD = 'todo3031'
+
+# pagination
+POSTS_PER_PAGE = 9

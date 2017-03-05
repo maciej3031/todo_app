@@ -12,7 +12,7 @@
     <meta name="keywords"
           content=""/>
 
-    <link rel="stylesheet" href="../static/style.css" type="text/css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" type="text/css"/>
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 
 </head>
@@ -21,7 +21,7 @@
     <div id="box">
     <div>
         <a class="title" href="{{ url_for('login') }}">
-            <h1>{{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom"></h1>
+            <h1>{{ config.SITE_NAME }}&nbsp;<img src="{{ url_for('static', filename='ok.ico') }}" alt="logo" height="27" align="bottom"></h1>
         </a>
     </div>
 
@@ -30,7 +30,7 @@
     </div>
     <div id="footer2">
         2016 &copy; Maciej Pęśko<br>
-        <img src="../static/mail.ico" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
+        <img src="{{ url_for('static', filename='mail.ico') }}" height="17" align="top"> mpesko3031@gmail.com
     </div>
 </body>
 </html>

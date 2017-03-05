@@ -10,6 +10,7 @@ class User(db.Model):
     password = db.Column(db.Text, nullable=False, index=True)
     email = db.Column(db.Text, unique=True, index=True)
     tasks = db.relationship('Task', backref='author', lazy='dynamic')
+    opinions = db.relationship('Opinion', backref='opinion_author', lazy='dynamic')
 
     def __str__(self):
         return self.username
@@ -40,7 +41,7 @@ class Task(db.Model):
     task = db.Column(db.Text, nullable=False)
     executed = db.Column(db.Boolean, nullable=False)
     data_pub = db.Column(db.Text)
-    username = db.Column(db.Text, db.ForeignKey("user.username"), nullable=False,)     #user to nazwa tabeli
+    username = db.Column(db.Text, db.ForeignKey("user.username"), nullable=False)     #user to nazwa tabeli
 
     def __str__(self):
         return self.task
@@ -71,6 +72,7 @@ class Opinion(db.Model):
     opinion_text = db.Column(db.Text)
     error_text = db.Column(db.Text)
     pub_date = db.Column(db.DateTime)
+    author = db.Column(db.Text, db.ForeignKey("user.username"), nullable=False)
 
     def __str__(self):
         return self.id

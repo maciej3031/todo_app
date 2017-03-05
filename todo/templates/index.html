@@ -10,7 +10,7 @@
       content=""/>
 <!-- nazwa aplikacji pobrana z ustawień -->
     <title>{{ config.SITE_NAME }}</title>
-    <link rel="stylesheet" type="text/css" href="../static/style.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
 </head>
 
@@ -20,7 +20,7 @@
             <div>
                 <h1>
                     <a class="title2" href="{{ url_for('user', username=g.user.username) }}">
-                        {{ config.SITE_NAME }}&nbsp;<img src="../static/ok.ico" alt="logo" height="27" align="bottom">
+                        {{ config.SITE_NAME }}&nbsp;<img src="{{url_for('static', filename='ok.ico')}}" alt="logo" height="27" align="bottom">
                     </a>
                 </h1>
             </div>
@@ -58,7 +58,7 @@
 
         <div class="foot1">
             2016 &copy; Maciej Pęśko<br>
-            <img src="../static/mail.ico" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
+            <img src="{{ url_for('static', filename='mail.ico') }}" alt="mail-icon" height="17" align="top"> mpesko3031@gmail.com
         </div>
     </footer>
 </body>
