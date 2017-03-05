@@ -482,10 +482,17 @@ class PaginationTest(unittest.TestCase):
         self.app = app.test_client()
         db.create_all()
         password1 = argon2.using(rounds=4).hash("password")
-        user1 = User(username='user', password=password1, email="test@test.com")
+        user1 = User(username='user1', password=password1, email="test@test.com", tasks_per_page=20)
+        user2 = User(username='user2', password=password1, email="test2@test.com")
         db.session.add(user1)
+        db.session.add(user2)
         for i in range(15):
-            task = Task(id=i, task="test task test", executed=False, data_pub="2017-01-19T04:00", username="user")
+            task = Task(id=i, task="test task test", executed=False, data_pub="2017-01-19T04:00", username="user1")
+            db.session.add(task)
+            db.session.commit()
+        for i in range(15):
+            j = 20+i
+            task = Task(id=j, task="test task test", executed=False, data_pub="2017-01-19T04:00", username="user2")
             db.session.add(task)
             db.session.commit()
 
@@ -500,15 +507,51 @@ class PaginationTest(unittest.TestCase):
 
     # Tests
 
-    def test_pagination_number_of_pages(self):
-        self.login('user', 'password')
-        response1 = self.app.get('/user/user/1')
-        response2 = self.app.get('/user/user/2')
-        response3 = self.app.get('/user/user/3')
+    def test_pagination_number_of_pages_user_defined_number(self):
+        self.login('user1', 'password')
+        response1 = self.app.get('/user/user1/1')
+        response2 = self.app.get('/user/user1/2')
+        response3 = self.app.get('/user/user1/3')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 404)
+        self.assertEqual(response3.status_code, 404)
+
+    def test_pagination_number_of_pages_user_undefined_number(self):
+        self.login('user2', 'password')
+        response1 = self.app.get('/user/user2/1')
+        response2 = self.app.get('/user/user2/2')
+        response3 = self.app.get('/user/user2/3')
         self.assertEqual(response1.status_code, 200)
         self.assertEqual(response2.status_code, 200)
         self.assertEqual(response3.status_code, 404)
 
+    def test_pagination_change_user_defined_number(self):
+        self.login('user1', 'password')
+        self.app.post('/app_settings', data=dict(tasks_per_page=5))
+        response1 = self.app.get('/user/user1/1')
+        response2 = self.app.get('/user/user1/2')
+        response3 = self.app.get('/user/user1/3')
+        response4 = self.app.get('/user/user1/4')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response3.status_code, 200)
+        self.assertEqual(response4.status_code, 404)
+        user = User.query.filter_by(username="user1").first()
+        self.assertEqual(user.tasks_per_page, 5)
+
+    def test_pagination_change_user_undefined_number(self):
+        self.login('user2', 'password')
+        self.app.post('/app_settings', data=dict(tasks_per_page=5))
+        response1 = self.app.get('/user/user2/1')
+        response2 = self.app.get('/user/user2/2')
+        response3 = self.app.get('/user/user2/3')
+        response4 = self.app.get('/user/user2/4')
+        self.assertEqual(response1.status_code, 200)
+        self.assertEqual(response2.status_code, 200)
+        self.assertEqual(response3.status_code, 200)
+        self.assertEqual(response4.status_code, 404)
+        user = User.query.filter_by(username="user2").first()
+        self.assertEqual(user.tasks_per_page, 5)
 
 if __name__ == '__main__':
     unittest.main()

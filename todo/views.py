@@ -8,7 +8,7 @@ from passlib.hash import argon2
 from todo import app, login_manager, db, mail
 from .models import User, Task, Question, Choice, Opinion
 from flask_mail import Message
-from config import POSTS_PER_PAGE
+from config import TASKS_PER_PAGE
 import re
 import random
 random.seed()
@@ -103,6 +103,9 @@ def register():
 def user(username, page=1):
     """Adding and displaying tasks"""
 
+    if g.user.tasks_per_page is None:
+        g.user.tasks_per_page = TASKS_PER_PAGE
+        db.session.commit()
     error = None
     if request.method == 'POST':
         task_text = request.form['task']
@@ -121,7 +124,7 @@ def user(username, page=1):
         else:
             error = 'You cannot add empty task!'  # komunikat o błędzie
     if username == g.user.username:
-        tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).paginate(page, POSTS_PER_PAGE, True)
+        tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).paginate(page, g.user.tasks_per_page, True)
         return render_template('tasks_list.html', tasks=tasks, error=error)
     else:
         return abort(404)
@@ -248,6 +251,30 @@ def settings():
         return redirect(url_for('settings'))
 
     return render_template('settings.html')
+
+
+@app.route('/app_settings', methods=['POST'])
+@login_required
+def app_settings():
+    """Changing app settings"""
+
+    if request.method == 'POST':
+        tasks_per_page = request.form['tasks_per_page']
+        try:
+            tasks_per_page = int(tasks_per_page)
+            if tasks_per_page > 0:
+                user = User.query.filter_by(username=g.user.username).first()
+                user.tasks_per_page = tasks_per_page
+                db.session.commit()
+                flash("New value: {} tasks per page!".format(tasks_per_page))
+            else:
+                error = "Invalid number!"
+                return render_template('settings.html', error=error)
+        except ValueError:
+            error = "Invalid number!"
+            return render_template('settings.html', error=error)
+
+    return redirect(url_for('settings'))
 
 
 @app.route('/delete_account', methods=['POST'])

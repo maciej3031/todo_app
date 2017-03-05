@@ -28,6 +28,16 @@
             <p style="margin-left: 50px"><label><button type="submit"><b>Save changes</b></button></label></p>
     </form>
     <br><hr>
+
+    <h3 style="margin-left: 40px;">Change your application settings:</h3>
+    <form class="add-form" method="POST" action="{{ url_for('app_settings') }}">
+            <p style="margin-left: -35px;">
+                <label>Tasks per page: <input type="text" name="tasks_per_page" placeholder="i.e. 10"></label>
+            </p>
+            <p style="margin-left: 50px"><label><button type="submit"><b>Save changes</b></button></label></p>
+    </form>
+    <br><hr>
+
     <h3 style="margin-left: 40px;">Delete your account:</h3>
     <form class="del-form" method="POST" action="{{ url_for('delete_account') }}">
         <label>

@@ -19,4 +19,4 @@ MAIL_USERNAME = 'todoserver7@gmail.com'
 MAIL_PASSWORD = 'todo3031'
 
 # pagination
-POSTS_PER_PAGE = 9
+TASKS_PER_PAGE = 9

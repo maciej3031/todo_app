@@ -11,6 +11,7 @@ class User(db.Model):
     email = db.Column(db.Text, unique=True, index=True)
     tasks = db.relationship('Task', backref='author', lazy='dynamic')
     opinions = db.relationship('Opinion', backref='opinion_author', lazy='dynamic')
+    tasks_per_page = db.Column(db.Integer)
 
     def __str__(self):
         return self.username
