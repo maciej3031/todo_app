@@ -6,9 +6,6 @@ __pycache__/
 # C extensions
 *.so
 
-#MY
-run.py
-
 # Distribution / packaging
 .Python
 env/
