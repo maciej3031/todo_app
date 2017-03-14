@@ -3,4 +3,4 @@
 from todo import app
 
 if __name__ == '__main__':
-    app.run(debug=False)         # uruchomienie aplikacji
+    app.run(debug=True)         # uruchomienie aplikacji
