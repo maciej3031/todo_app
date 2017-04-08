@@ -4,7 +4,7 @@
 <div id="content">
 
     <form action="{{ url_for('poll') }}" class= "add-form" method="POST">
-
+    {% if question %}
         <h3 class="h31">{{ question[0].question_text }}</h3>
     {% if question[0] %}
     {% for choice in question[0].choices %}
@@ -32,10 +32,11 @@
         <h3 class="h31">{{ question[3].question_text }}*</h3>
         <textarea class="choice2" name="choice4" cols="70" rows="5"></textarea><br>
     {% endif %}
+    {% endif %}
+
     <br>
-    <label><button class="b4" type="submit"><b>Send</b></button></label>
+    <label><button class="b4" type="submit" title="Send answers"><b>Send</b></button></label>
     </form>
     <div id="legend">* - Optional field</div>
-
 </div>
 {% endblock %}

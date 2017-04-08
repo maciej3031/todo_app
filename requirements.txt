@@ -1,0 +1,11 @@
+flask
+flask_mail
+flask_login
+sqlalchemy
+flask_sqlalchemy
+sqlalchemy-migrate
+flask_sslify
+pymysql
+passlib
+argon2_cffi
+migrate

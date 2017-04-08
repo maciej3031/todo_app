@@ -1,55 +1,54 @@
 # -*- coding: utf-8 -*-
 # todo/views.py
 
-from flask import g, render_template, flash, redirect, url_for, request, session, abort
-from datetime import datetime
-from flask_login import login_required, current_user, login_user, logout_user
-from passlib.hash import argon2
-from todo import app, login_manager, db, mail
-from .models import User, Task, Question, Choice, Opinion
+from flask import g, render_template, flash, redirect, url_for, request, abort
+from flask_login import login_required, current_user, logout_user
 from flask_mail import Message
-from config import TASKS_PER_PAGE
-import re
-import random
-random.seed()
+
+from config import MAIL_USERNAME
+from todo import app, login_manager, db, mail
+from .messages import *
+from .models import User, Task, Question, Choice, Opinion, ErrorOpinion
 
 
 @login_manager.user_loader
 def user_loader(user_id):
-    """Return user object given id"""
+    """Returns user object given id"""
 
-    return User.query.get(user_id)
+    return User.query.get(user_id)  # zwraca obiekt klasy User o podanym id
 
 
 @app.before_request
 def before_request():
-    g.user = current_user
+    g.user = current_user  # zapisanie aktualnego użytkownika do globalnego obiektu przed każdym requestem
 
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
     """login method"""
 
-    error = None
     if request.method == 'POST':
         username = request.form['login']
         password = request.form['password']
-        remember_me = request.form.get('rememberme') # musi być .get aby, gdyż metoda POST przesyla dane tylko wtedy kiedy checkbox jest zaznaczony
-        if username and password:
-            user = User.query.filter_by(username=username).first()
-            if user:
-                if argon2.verify(password, user.password):   # sprawdzamy czy login i hasło zgodne z danymi w bazie przy pomocy Argon2
-                    login_user(user, remember=remember_me)
-                    flash('Logged in successfully')
-                    return redirect(url_for("user", username=g.user.username))
-                else:
-                    error = "Incorrect password"  # komunikat o błędzie
-            else:
-                error = "No such user"  # komunikat o błędzie
-        else:
-            error = "Incorrect login or password"  # komunikat o błędzie
+        # poniżej musi być .get aby, gdyż metoda POST przesyla dane tylko wtedy kiedy checkbox jest zaznaczony
+        remember_me = request.form.get('rememberme')
 
-    return render_template('login.html', error=error)
+        if not User.check_login_data_correctness(username, password):
+            error = LoginMessages.incorrect_data_error_message
+            return render_template('login.html', error=error)
+
+        if not User.check_user_existence_by_username(username):
+            error = LoginMessages.no_user_error_message
+            return render_template('login.html', error=error)
+
+        if User.handle_login(username, password, remember_me):
+            flash(LoginMessages.success_message)
+            return redirect(url_for("user", username=g.user.username))
+        else:
+            error = LoginMessages.incorrect_password_error_message
+            return render_template('login.html', error=error)
+
+    return render_template('login.html')
 
 
 @app.route('/logout', methods=['GET'])
@@ -58,7 +57,7 @@ def logout():
     """log out method"""
 
     logout_user()
-    flash("logged out successfully")
+    flash(LogoutMessages.success_message)
     return redirect(url_for("login"))
 
 
@@ -66,65 +65,53 @@ def logout():
 def register():
     """Sign up method"""
 
-    error = None
     if request.method == 'POST':
         username = request.form['login']
         password = request.form['password']
         confpass = request.form['password2']
         email = request.form['email']
-        if password and confpass and username and email:       # sprawdzenie czy podano zarówno login, mail jak i hasło
-            pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
-            if re.match(pattern, email):        # sprawdzenie poprawności maila
-                user_data = User.query.filter_by(username=username).first()
-                email_data = User.query.filter_by(email=email).first()
-                if not user_data and not email_data:     # sprawdzamy czy na pewno nie ma już takiego użytkownika w bazie
-                    if password == confpass:        # sprawdzenie zgodonści podanych haseł
-                        password = argon2.using(rounds=4).hash(password)    # hashowanie hasła przy pomocy Argon2
-                        user = User(username=username, password=password, email=email)
-                        db.session.add(user)
-                        db.session.commit()
-                        flash("Profile was created successfully")
-                        return redirect(url_for("login"))
-                    else:
-                        error = "Passwords do not match"  # komunikat o błędzie
-                else:
-                    error = "Login or email already exists"  # komunikat o błędzie
-            else:
-                error = "Incorrect email address"  # komunikat o błędzie
-        else:
-            error = "Incorrect data"  # komunikat o błędzie
 
-    return render_template('register.html', error=error)
+        if not User.check_register_data_correctness(username, password, confpass, email):
+            error = RegisterMessages.incorrect_data_error_message
+            return render_template('register.html', error=error)
+
+        if not User.check_valid_email(email):  # sprawdzenie poprawności maila
+            error = RegisterMessages.incorrect_email_error_message
+            return render_template('register.html', error=error)
+
+        if User.check_user_existence_by_username(username) or User.check_user_existence_by_email(email):
+            error = RegisterMessages.already_exist_error_message
+            return render_template('register.html', error=error)
+
+        if User.handle_registration(username, password, confpass, email):
+            flash(RegisterMessages.success_message)
+            return redirect(url_for("login"))
+        else:
+            error = RegisterMessages.incorrect_passwords_error_message
+            return render_template('register.html', error=error)
+
+    return render_template('register.html')
 
 
 @app.route('/user/<username>', methods=['GET', 'POST'])
 @app.route('/user/<username>/<int:page>', methods=['GET', 'POST'])
 @login_required
 def user(username, page=1):
-    """Adding and displaying tasks"""
+    """Adds and displays tasks"""
 
-    if g.user.tasks_per_page is None:
-        g.user.tasks_per_page = TASKS_PER_PAGE
-        db.session.commit()
+    g.user.check_user_tasks_per_page()
+    g.user.save_actual_page(page)
     error = None
     if request.method == 'POST':
         task_text = request.form['task']
         task_date = request.form['date']
-        if len(task_text) > 0:
-            executed = 0
-            if task_date:
-                data_pub = " ".join(str(task_date).split('T'))
-            else:
-                data_pub = ""
-            task = Task(task=task_text, executed=executed, data_pub=data_pub, username=g.user.username)
-            db.session.add(task)
-            db.session.commit()
-            flash('New task added.')
+        if Task.handle_task_adding(task_text, task_date, g.user.id):
+            flash(UserMessages.success_message)
             return redirect(url_for('user', username=g.user.username))
         else:
-            error = 'You cannot add empty task!'  # komunikat o błędzie
+            error = UserMessages.error_message
     if username == g.user.username:
-        tasks = Task.query.filter_by(username=g.user.username).order_by(Task.data_pub.desc()).paginate(page, g.user.tasks_per_page, True)
+        tasks = Task.get_all_tasks_by_username(g.user, page)
         return render_template('tasks_list.html', tasks=tasks, error=error)
     else:
         return abort(404)
@@ -133,7 +120,7 @@ def user(username, page=1):
 @app.route('/poll', methods=['POST', 'GET'])
 @login_required
 def poll():
-    """Voting logic"""
+    """Vote logic"""
 
     question = Question.query.order_by(Question.id).all()
     if request.method == 'POST':
@@ -142,19 +129,20 @@ def poll():
         selected_choice3 = request.form.get('choice3')
         error_text = request.form['choice4']
 
-        if selected_choice1 and selected_choice3:
-            choice1 = Choice.query.filter_by(id=selected_choice1).first()
-            choice1.votes += 1
-            choice3 = Choice.query.filter_by(id=selected_choice3).first()
-            choice3.votes += 1
-            db.session.commit()
-        else:
-            error = "You did not select a choice in all questions."
+        if not Choice.handle_selected_choices(selected_choice1, selected_choice3):
+            error = PollMessages.no_choices_error_message
             return render_template('results.html', error=error, question=question)
-        if opinion_text or error_text:
-            opinion = Opinion(opinion_text=opinion_text, error_text=error_text, pub_date=datetime.now(), author=g.user.username)
-            db.session.add(opinion)
-            db.session.commit()
+
+        if opinion_text:
+            if not Opinion.handle_opinion(opinion_text, g.user.id):
+                error = PollMessages.mex_length_error_message
+                return render_template('results.html', error=error, question=question)
+
+        if error_text:
+            if not ErrorOpinion.handle_error_opinion(error_text, g.user.id):
+                error = PollMessages.mex_length_error_message
+                return render_template('results.html', error=error, question=question)
+
         return redirect(url_for('results'))
     else:
         return render_template('poll.html', question=question)
@@ -171,13 +159,29 @@ def results():
 @app.route('/executed', methods=['POST'])
 @login_required
 def executed():
-    """Changing status of a task to executed """
+    """Changes status of a task to executed """
 
     task_id = request.form['execute']
     task = Task.query.filter_by(id=task_id).first()
     task.executed = 1
     db.session.commit()
-    return redirect(url_for('user', username=g.user.username))
+    page = g.user.page
+    flash(ExecutedMessages.success_message)
+    return redirect(url_for('user', username=g.user.username, page=page))
+
+
+@app.route('/undo', methods=['POST'])
+@login_required
+def undo():
+    """Changes status of a task back to not executed """
+
+    task_id = request.form['undo']
+    task = Task.query.filter_by(id=task_id).first()
+    task.executed = 0
+    db.session.commit()
+    page = g.user.page
+    flash(UndoMessages.success_message)
+    return redirect(url_for('user', username=g.user.username, page=page))
 
 
 @app.route('/erase', methods=['POST'])
@@ -185,69 +189,46 @@ def executed():
 def erase():
     """Deletes a given task"""
 
-    for i in request.form.getlist('erase'):
-        task = Task.query.filter_by(id=i).first()
+    for task_id in request.form.getlist('erase'):
+        task = Task.query.filter_by(id=task_id).first()
         db.session.delete(task)
         db.session.commit()
-    flash('Tasks deleted!')
-    return redirect(url_for('user', username=g.user.username))
+    page = g.user.page
+    flash(EraseMessages.success_message)
+    return redirect(url_for('user', username=g.user.username, page=page))
 
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    """Changing profile data"""
+    """Changes profile data"""
 
-    info = None
     if request.method == 'POST':
         username = request.form['login']
         password = request.form['password']
         confpass = request.form['password2']
         email = request.form['email']
 
-        pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
         if email:
-            if re.match(pattern, email):        # sprawdzenie poprawności maila
-                email_data = User.query.filter_by(email=email).first()
-                if not email_data:
-                    user = User.query.filter_by(username=g.user.username).first()
-                    user.email = email
-                    db.session.commit()
-                    info = 'Changes were saved'
-                else:
-                    error = "email address already exists"  # komunikat o błędzie
+            if User.check_valid_email(email):
+                if not g.user.handle_email_change(email):
+                    error = SettingsMessages.email_exists_error_message
                     return render_template('settings.html', error=error)
             else:
-                error = "incorrect email address"
+                error = SettingsMessages.incorrect_email_error_message
                 return render_template('settings.html', error=error)
 
         if username:
-            user_data = User.query.filter_by(username=username).first()
-            if not user_data:
-                user = User.query.filter_by(username=g.user.username).first()
-                tasks = Task.query.filter_by(username=g.user.username).all()
-                for i in tasks:
-                    i.username = username
-                user.username = username
-                db.session.commit()
-                info = 'Changes were saved'
-                login_user(user)
-            else:
-                error = "login already exists"  # komunikat o błędzie
+            if not g.user.handle_username_change(username):
+                error = SettingsMessages.incorrect_login_data_error_message
                 return render_template('settings.html', error=error)
 
         if password or confpass:
-            if password == confpass:        # sprawdzenie zgodonści podanych haseł
-                password = argon2.using(rounds=4).hash(password)    # hashowanie hasła przy pomocy Argon2
-                user = User.query.filter_by(username=g.user.username).first()
-                user.password = password
-                db.session.commit()
-                info = 'Changes were saved'
-            else:
-                error = "Passwords do not match"  # komunikat o błędzie
+            if not g.user.handle_password_change(password, confpass):
+                error = SettingsMessages.incorrect_password_data_error_message
                 return render_template('settings.html', error=error)
-        if info:
-            flash(info)
+
+        flash(SettingsMessages.success_message)
         return redirect(url_for('settings'))
 
     return render_template('settings.html')
@@ -256,22 +237,19 @@ def settings():
 @app.route('/app_settings', methods=['POST'])
 @login_required
 def app_settings():
-    """Changing app settings"""
+    """Changes app settings"""
 
     if request.method == 'POST':
         tasks_per_page = request.form['tasks_per_page']
         try:
             tasks_per_page = int(tasks_per_page)
-            if tasks_per_page > 0:
-                user = User.query.filter_by(username=g.user.username).first()
-                user.tasks_per_page = tasks_per_page
-                db.session.commit()
-                flash("New value: {} tasks per page!".format(tasks_per_page))
+            if g.user.handle_tasks_per_page_change(tasks_per_page):
+                flash(AppSettingsMessages.success_message.format(tasks_per_page))
             else:
-                error = "Invalid number!"
+                error = AppSettingsMessages.incorrect_value_error_message
                 return render_template('settings.html', error=error)
         except ValueError:
-            error = "Invalid number!"
+            error = AppSettingsMessages.incorrect_number_error_message
             return render_template('settings.html', error=error)
 
     return redirect(url_for('settings'))
@@ -282,14 +260,15 @@ def app_settings():
 def delete_account():
     """Deletes account permanently"""
 
-    tasks = Task.query.filter_by(username=g.user.username).all()
-    for i in tasks:
-        db.session.delete(i)
+    tasks = Task.query.filter_by(username_id=g.user.id).all()
+    # usuwamy wszystkie taski, co prawda cascade='all, delete' w modelu User załatwia sprawę, ale dla pewności
+    for task in tasks:
+        db.session.delete(task)
     user = User.query.filter_by(username=g.user.username).first()
     db.session.delete(user)
     db.session.commit()
     logout_user()
-    flash('Account was deleted permanently')
+    flash(DeleteAccountMessages.success_message)
     return redirect(url_for("login"))
 
 
@@ -299,36 +278,21 @@ def password_reset():
 
     error = None
 
-    def password_generator():
-        x = random.randint(4, 6)
-        y = random.randint(2, 3)
-        word = [random.choice([i for i in letters]) for i in range(x)]
-        num = [random.choice([i for i in numbers]) for i in range(y)]
-        lista = word + num
-        random.shuffle(lista)
-        password = "".join(lista)
-        return password
-
     if request.method == "POST":
         email = request.form['email']
-        letters = "abcdefghijklmnoprstuvwxyz"
-        numbers = "1234567890"
         user = User.query.filter_by(email=email).first()
         if user:
             try:
-                password = password_generator()
-                password_hashed = argon2.using(rounds=4).hash(password)
-                user.password = password_hashed
-                db.session.commit()
-                msg = Message("Reset password", sender='todoserver7@gmail.com', recipients=[user.email])
-                msg.body = "Hello {}! \nYour password has been changed. New password: {}. We recommend to change it" \
-                           " immediately. \n\nRegards, \ntodo team!".format(user.username, password)
+                password = User.password_generator()
+                msg = Message(PasswordResetMessages.title_of_message, sender=MAIL_USERNAME, recipients=[user.email])
+                msg.body = PasswordResetMessages.body_of_message.format(user.username, password)
                 mail.send(msg)
-                flash('New password has been sent to given email address!')
+                user.handle_password_reset(password)
+                flash(PasswordResetMessages.success_message)
                 return redirect(url_for("login"))
             except Exception:
-                error = "There was a problem with You email address. It looks like it doesn't exist or something..."
+                error = PasswordResetMessages.unidentified_error_message
         else:
-            error = "No user with given email address or address is wrong!"
+            error = PasswordResetMessages.no_user_error_message
 
     return render_template('remind_password.html', error=error)

@@ -12,7 +12,7 @@
 </p>
 
 <div id="content">
-    <h3 style="margin-left: 40px;">Change your profile info:</h3>
+    <h3 style="margin-left: 40px;">Change your profile info:*</h3>
     <!-- formularz zmian -->
     <form class="add-form" method="POST" action="{{ url_for('settings') }}">
             <p style="margin-left: 28px">
@@ -25,7 +25,7 @@
             <p style="margin-left: -58px">
                 <label>Confirm password: <input type="password" name="password2"></label>
             </p>
-            <p style="margin-left: 50px"><label><button type="submit"><b>Save changes</b></button></label></p>
+            <p style="margin-left: 50px"><label><button type="submit" title="Save new settings"><b>Save changes</b></button></label></p>
     </form>
     <br><hr>
 
@@ -34,18 +34,20 @@
             <p style="margin-left: -35px;">
                 <label>Tasks per page: <input type="text" name="tasks_per_page" placeholder="i.e. 10"></label>
             </p>
-            <p style="margin-left: 50px"><label><button type="submit"><b>Save changes</b></button></label></p>
+            <p style="margin-left: 50px"><label><button type="submit" title="Save new settings"><b>Save changes</b></button></label></p>
     </form>
     <br><hr>
 
     <h3 style="margin-left: 40px;">Delete your account:</h3>
     <form class="del-form" method="POST" action="{{ url_for('delete_account') }}">
         <label>
-            <button type="submit" class="b3" onclick="return confirm('Are you sure you want to delete your account?');">
+            <button type="submit" class="b3" onclick="return confirm('Are you sure you want to delete your account?');"
+                    title="Delete account permanently">
                 <b>Delete account</b>
             </button>
         </label>
     </form>
+    <div id="legend">* - Fill only those fields that You want to be changed</div>
 
 </div>
 {% endblock %}

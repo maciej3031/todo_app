@@ -27,22 +27,22 @@
             <div id="header">
                 <div class="header1">
                     <form class="add-form" method="GET" action="{{ url_for('user', username=g.user.username) }}">
-                        <label><button class="b4" type="submit"><b>My Tasks</b></button></label>
+                        <label><button class="b4" type="submit" title="Home page"><b>My Tasks</b></button></label>
                     </form>
                 </div>
                 <div class="header1">
                     <form class="add-form" method="GET" action="{{ url_for('settings') }}">
-                        <label><button class="b4" type="submit"><b>Settings</b></button></label>
+                        <label><button class="b4" type="submit" title="Change application settings"><b>Settings</b></button></label>
                     </form>
                 </div>
                 <div class="header1">
                     <form class="add-form" method="GET" action="{{ url_for('poll') }}">
-                        <label><button class="b4" type="submit"><b>Poll</b></button></label>
+                        <label><button class="b4" type="submit" title="Fill out the survey"><b>Poll</b></button></label>
                     </form>
                 </div>
                 <div id="header2">
                     <form class="add-form" method="GET" action="{{ url_for('logout') }}">
-                        <label><button class="b4" type="submit"><b>Log out</b></button></label>
+                        <label><button class="b4" type="submit" title="Log out"><b>Log out</b></button></label>
                     </form>
                 </div>
                 <div id="header3"><h3>Profile:&nbsp;{{ g.user.username }}</h3></div>

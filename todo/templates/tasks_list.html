@@ -18,13 +18,13 @@
 
     <!-- formularz dodawania zadania -->
     <form class="add-form2" method="POST" action="{{ url_for('user', username=g.user.username) }}">
-        <label><input class=focus name="task" value=""/></label>
-        <label><input class=focus type="datetime-local" data-date-inline-picker="false" data-date-open-on-focus="true" name="date"/></label>
-        <label><button class="b1" type="submit"><b>Add Task!</b></button></label>
+        <label><input class=focus name="task" value="" title="Enter task here"/></label>
+        <label><input class=focus type="datetime-local" data-date-inline-picker="false" data-date-open-on-focus="true" name="date" title="Choose date and time"/></label>
+        <label><button class="b1" type="submit" title="Add new task"><b>Add Task!</b></button></label>
     </form>
 
     <form id="eraser" method="POST" action="{{ url_for('erase') }}">
-        <label><button type="submit" class="b2">Delete<br>Task!</button> </label>
+        <label><button type="submit" class="b2" title="Delete multiple tasks">Delete<br>Task!</button> </label>
     </form>
 </div>
 <ol>
@@ -36,7 +36,7 @@
             <tr valign="top">
                 <td>
                     <label>
-                        <input class="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser">
+                        <input class="chbx" type="checkbox" name="erase" value="{{ i.id }}" form="eraser" title="Check to delete task">
                     </label>
                 </td>
                 <!-- wyróznienie zadań zakończonych -->
@@ -56,9 +56,17 @@
                     <!-- wysyłamy jedynie informacje o id zadania -->
                     <form class="form2" method="POST" action="{{ url_for('executed') }}">
                         <label><input type="hidden" name="execute" value="{{ i.id }}"/></label>
-                        <button type="submit" class="b5">Execute!</button>
+                        <button type="submit" class="b5" title="Mark as executed">Execute!</button>
                     </form>
                 {% endif %}
+                {% if i.executed %}
+                    <!-- wysyłamy jedynie informacje o id zadania -->
+                    <form class="form2" method="POST" action="{{ url_for('undo') }}">
+                        <label><input type="hidden" name="undo" value="{{ i.id }}"/></label>
+                        <button type="submit" class="b6" title="Undo execution">Undo!</button>
+                    </form>
+                {% endif %}
+
                 </td>
             </tr>
             </tbody>
@@ -68,7 +76,8 @@
 </ol>
     <div class="pagination">
         {% if tasks.has_prev %}
-            <a class = "pagination1" href="{{ url_for('user', username=g.user.username,page=tasks.prev_num) }}">&lt;&lt; Newer tasks</a>
+            <a class = "pagination1" href="{{ url_for('user', username=g.user.username, page=tasks.prev_num) }}"
+               title="Previous page">&lt;&lt; Newer tasks</a>
         {% else %}
              <span class = "pagination2">&lt;&lt; Newer tasks</span>
         {% endif %}
@@ -76,7 +85,7 @@
         {%- for page in tasks.iter_pages() %}
         {% if page %}
             {% if page != tasks.page %}
-            <a class = "pagination1" href="{{ url_for('user', username=g.user.username, page=page) }}">&nbsp;{{ page }}&nbsp;</a>
+            <a class = "pagination1" href="{{ url_for('user', username=g.user.username, page=page) }}" title="Go to page {{ page }}">&nbsp;{{ page }}&nbsp;</a>
             {% else %}
             <strong class = "pagination2">&nbsp;{{ page }}&nbsp;</strong>
             {% endif %}
@@ -86,7 +95,8 @@
         {%- endfor %}
 
         {% if tasks.has_next %}
-            <a class = "pagination1" href="{{ url_for('user', username=g.user.username, page=tasks.next_num) }}">Older tasks &gt;&gt;</a>
+            <a class = "pagination1" href="{{ url_for('user', username=g.user.username, page=tasks.next_num) }}"
+               title="Next page">Older tasks &gt;&gt;</a>
         {% else %}
             <span class = "pagination2">Older tasks &gt;&gt;</span>
         {% endif %}

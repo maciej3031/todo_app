@@ -306,6 +306,22 @@ button:hover
     color: #64DD17;
 }
 
+.b6
+{
+    cursor: pointer;
+    font-size: 11px;
+    background: floralwhite;
+    color: #BF360C;
+    border: none;
+
+}
+
+.b6:hover
+{
+    background: floralwhite;
+    color: #FF5722;
+}
+
 .b2
 {
     cursor: pointer;
