@@ -27,7 +27,7 @@ wheels/
 .idea/
 
 *MY
-virtual-env
+virtualenv
 test.db
 database_and_mail_access_data.txt
 
